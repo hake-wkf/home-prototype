@@ -42,7 +42,8 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
 
   // Modal State for Approval/Rejection
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
-  const [assignedConsultant, setAssignedConsultant] = useState('王浩 (高级智能家居顾问)');
+  const [assignedBusiness, setAssignedBusiness] = useState('王浩 (专属商务经理)');
+  const [assignedOperations, setAssignedOperations] = useState('赵敏 (交付运营专员)');
   const [auditFeedback, setAuditFeedback] = useState('');
 
   // Filter customers
@@ -73,8 +74,9 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
     setSelectedAuditCustomer(customer);
     setActionType(type);
     if (type === 'approve') {
-      setAssignedConsultant(customer.assignedTo || '王浩 (高级智能家居顾问)');
-      setAuditFeedback('客户信息与方案意向初审通过，已指派专业商务经理对接实地勘测。');
+      setAssignedBusiness(customer.assignedBusiness || customer.assignedTo || '王浩 (专属商务经理)');
+      setAssignedOperations(customer.assignedOperations || '赵敏 (交付运营专员)');
+      setAuditFeedback('客户信息与方案初审通过，已分配专属商务与对应运营全面跟进。');
     } else {
       setAuditFeedback('客户填写的户型或联系方式有误，请补充完整后重新提交。');
     }
@@ -87,7 +89,9 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
     const updatedCustomer: Customer = {
       ...selectedAuditCustomer,
       auditStatus: newStatus,
-      assignedTo: actionType === 'approve' ? assignedConsultant : selectedAuditCustomer.assignedTo,
+      assignedTo: actionType === 'approve' ? assignedBusiness : selectedAuditCustomer.assignedTo,
+      assignedBusiness: actionType === 'approve' ? assignedBusiness : selectedAuditCustomer.assignedBusiness,
+      assignedOperations: actionType === 'approve' ? assignedOperations : selectedAuditCustomer.assignedOperations,
       auditFeedback: auditFeedback.trim(),
       updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     };
@@ -106,7 +110,7 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
           ...currentProfile,
           auditStatus: newStatus,
           auditFeedback: auditFeedback.trim(),
-          consultantName: actionType === 'approve' ? assignedConsultant : undefined,
+          consultantName: actionType === 'approve' ? assignedBusiness : undefined,
         };
         AdminStorageManager.saveUserProfile(updatedProfile);
       }
@@ -116,7 +120,7 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
 
     onShowToast(
       actionType === 'approve'
-        ? `客户【${selectedAuditCustomer.name}】审核已通过，并已指派商务【${assignedConsultant}】`
+        ? `客户【${selectedAuditCustomer.name}】审核已通过，已分配商务【${assignedBusiness}】与对应运营【${assignedOperations}】`
         : `客户【${selectedAuditCustomer.name}】已驳回审核`
     );
 
@@ -239,7 +243,9 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
                         {auditStatus === 'approved' && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center space-x-1">
                             <CheckCircle2 className="w-3 h-3" />
-                            <span>审核通过 (已指派商务: {cust.assignedTo || '王浩'})</span>
+                            <span>
+                              审核通过 (商务: {cust.assignedBusiness || cust.assignedTo || '王浩'} · 运营: {cust.assignedOperations || '赵敏'})
+                            </span>
                           </span>
                         )}
                         {auditStatus === 'rejected' && (
@@ -262,16 +268,16 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
                     </div>
                   </div>
 
-                  {/* Right Action Buttons */}
+                  {/* Right Action Buttons: 审核中心不需要查看详情; 通过并指派商务更改为通过 */}
                   <div className="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
                     {auditStatus === 'pending' && (
                       <>
                         <button
                           onClick={() => handleOpenActionModal(cust, 'approve')}
-                          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center space-x-1"
+                          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center space-x-1"
                         >
                           <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>通过并指派商务</span>
+                          <span>通过</span>
                         </button>
                         <button
                           onClick={() => handleOpenActionModal(cust, 'reject')}
@@ -288,17 +294,9 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
                         onClick={() => handleOpenActionModal(cust, 'approve')}
                         className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                       >
-                        重新审核 / 修改指派
+                        重新审核 / 调整人员
                       </button>
                     )}
-
-                    <button
-                      onClick={() => onSelectCustomer(cust)}
-                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      <span>查看详情</span>
-                    </button>
                   </div>
                 </div>
 
@@ -340,7 +338,7 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
                   <XCircle className="w-5 h-5 text-rose-400" />
                 )}
                 <h3 className="font-extrabold text-sm">
-                  {actionType === 'approve' ? '客户审核通过与商务指派' : '驳回客户审核'}
+                  {actionType === 'approve' ? '客户审核通过 (分配商务与运营)' : '驳回客户审核'}
                 </h3>
               </div>
               <button
@@ -373,20 +371,43 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
               </div>
 
               {actionType === 'approve' && (
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1.5">
-                    指派负责商务经理 / 顾问 <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={assignedConsultant}
-                    onChange={(e) => setAssignedConsultant(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-800"
-                  >
-                    <option value="王浩 (高级智能家居顾问)">王浩 (高级智能家居顾问)</option>
-                    <option value="李雷 (华北区商务经理)">李雷 (华北区商务经理)</option>
-                    <option value="韩梅梅 (全屋照明方案专家)">韩梅梅 (全屋照明方案专家)</option>
-                    <option value="张伟 (工程交付主管)">张伟 (工程交付主管)</option>
-                  </select>
+                <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="text-[11px] font-extrabold text-slate-800 flex items-center space-x-1.5">
+                    <UserCheck className="w-4 h-4 text-blue-600" />
+                    <span>通过审核需分配两个人 (商务与对应运营):</span>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                      1. 分配商务经理 <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={assignedBusiness}
+                      onChange={(e) => setAssignedBusiness(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-800 font-medium"
+                    >
+                      <option value="王浩 (专属商务经理)">王浩 (专属商务经理)</option>
+                      <option value="李伟 (高级商务顾问)">李伟 (高级商务顾问)</option>
+                      <option value="韩梅梅 (全屋照明方案专家)">韩梅梅 (全屋照明方案专家)</option>
+                      <option value="陈建 (华北区商务总监)">陈建 (华北区商务总监)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                      2. 分配对应运营 <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={assignedOperations}
+                      onChange={(e) => setAssignedOperations(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-800 font-medium"
+                    >
+                      <option value="赵敏 (交付运营专员)">赵敏 (交付运营专员)</option>
+                      <option value="周运营 (智能工程调度主管)">周运营 (智能工程调度主管)</option>
+                      <option value="孙亮 (项目交付运营)">孙亮 (项目交付运营)</option>
+                      <option value="钱华 (客户履约与技术支持)">钱华 (客户履约与技术支持)</option>
+                    </select>
+                  </div>
                 </div>
               )}
 

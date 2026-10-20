@@ -248,24 +248,24 @@ export const CustomerRecordInfoModal: React.FC<CustomerRecordInfoModalProps> = (
   return (
     <div
       id="customer-record-info-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-slate-950/75 backdrop-blur-xs animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn"
       onClick={onClose}
     >
       <div
         id="customer-record-info-modal-content"
-        className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 animate-scaleIn flex flex-col max-h-[90vh]"
+        className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between relative shrink-0">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center shadow-xs">
-              <UserCheck className="w-5 h-5" />
+        <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-2 min-w-0 pr-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white flex items-center justify-center shrink-0">
+              <UserCheck className="w-4 h-4 text-slate-300" />
             </div>
-            <div>
-              <h2 className="text-sm font-extrabold tracking-tight">方案客户信息与记录</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[260px]">
-                所属方案: {currentPlanTitle}
+            <div className="min-w-0">
+              <h2 className="text-sm font-extrabold tracking-tight truncate">方案客户信息与记录</h2>
+              <p className="text-[10px] text-slate-400 truncate max-w-[240px]">
+                方案: {currentPlanTitle}
               </p>
             </div>
           </div>
@@ -273,7 +273,7 @@ export const CustomerRecordInfoModal: React.FC<CustomerRecordInfoModalProps> = (
           <button
             id="btn-close-customer-modal"
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
             title="关闭"
           >
             <X className="w-4 h-4" />
@@ -281,7 +281,7 @@ export const CustomerRecordInfoModal: React.FC<CustomerRecordInfoModalProps> = (
         </div>
 
         {/* Body Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
+        <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
           {/* Toast */}
           {showSuccessToast && (
             <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center space-x-2 animate-fadeIn font-bold">
@@ -428,12 +428,12 @@ export const CustomerRecordInfoModal: React.FC<CustomerRecordInfoModalProps> = (
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between space-x-2 shrink-0">
+        <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2 shrink-0">
           <button
             id="btn-cancel-customer-modal"
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            className="flex-1 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
           >
             取消
           </button>
@@ -442,10 +442,10 @@ export const CustomerRecordInfoModal: React.FC<CustomerRecordInfoModalProps> = (
             id="btn-save-customer-modal"
             type="button"
             onClick={() => handleSave()}
-            className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+            className="flex-2 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-xs transition-all cursor-pointer flex items-center justify-center space-x-1"
           >
             <Save className="w-3.5 h-3.5 text-slate-200" />
-            <span>保存客户信息与记录</span>
+            <span>保存客户记录</span>
           </button>
         </div>
       </div>

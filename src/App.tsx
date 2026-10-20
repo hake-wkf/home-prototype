@@ -84,6 +84,40 @@ export default function App() {
     AdminStorageManager.saveSavedPlans(savedPlans);
   }, [savedPlans]);
 
+  // Real-time synchronization when backend admin updates plan audit/logistics status
+  useEffect(() => {
+    const handleSync = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setSavedPlans(e.detail);
+      } else {
+        setSavedPlans(AdminStorageManager.getSavedPlans());
+      }
+    };
+    const handleProfileSync = () => {
+      setCurrentUser(AdminStorageManager.getUserProfile());
+    };
+    window.addEventListener('saved_plans_updated', handleSync);
+    window.addEventListener('user_profile_updated', handleProfileSync);
+    window.addEventListener('customer_balance_updated', handleProfileSync);
+    window.addEventListener('coupons_updated', handleProfileSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('saved_plans_updated', handleSync);
+      window.removeEventListener('user_profile_updated', handleProfileSync);
+      window.removeEventListener('customer_balance_updated', handleProfileSync);
+      window.removeEventListener('coupons_updated', handleProfileSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
+  // When switching back from Admin to App, reload fresh plans and user profile
+  useEffect(() => {
+    if (appMode === 'app') {
+      setSavedPlans(AdminStorageManager.getSavedPlans());
+      setCurrentUser(AdminStorageManager.getUserProfile());
+    }
+  }, [appMode]);
+
   useEffect(() => {
     AdminStorageManager.savePlanTemplates(planTemplates);
   }, [planTemplates]);

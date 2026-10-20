@@ -174,10 +174,24 @@ export interface ShippingTimelineNode {
   active?: boolean;
 }
 
+// 单个发货单/包裹信息 (支持多发货单)
+export interface ShipmentPackage {
+  packageId: string;
+  trackingNumber: string; // 发货单号 (e.g. "SF138982847291" 或 "EXP2026090101")
+  title: string; // 发货单名称/包裹品类, e.g. "第 1 箱 · 智能主控与网络通信"
+  carrier?: string; // 承运方, e.g. "顺丰速运"
+  status: 'shipping' | 'delivered' | 'pending'; // 状态: '已发货' | '已签收' | '备货中'
+  itemsSummary?: string; // 简要品类
+}
+
 export interface ShippingLogisticsInfo {
   orderNumber: string; // 订单号 e.g. "ORD202608200088"
-  carrier: string; // e.g. "顺丰速运"
-  trackingNumber: string; // 快递单号 e.g. "SF138982847294"
+  carrier?: string; // 承运方式 e.g. "顺丰速运"
+  trackingNumber: string; // 主单号 / 兼容单号
+  trackingNumbers?: string[]; // 多个发货单号列表
+  packages?: ShipmentPackage[]; // 多个发货单明细
+  totalProgress?: number; // 0 - 100 (总发货进度百分比)
+  totalProgressLabel?: string; // e.g. "总发货进度 100% · 全部已发出"
   shippingDate: string; // e.g. "2026-08-20 10:30"
   estimatedArrivalDate: string; // e.g. "2026-08-21 18:00"
   deliveredDate?: string; // 签收时间
@@ -190,6 +204,17 @@ export interface ShippingLogisticsInfo {
   notes?: string;
   currentStepIndex: number; // 0: 联系商务, 1: 商务审核中, 2: 已发货, 3: 签收
   timeline: ShippingTimelineNode[];
+}
+
+// Default Contact & Delivery Address (个人中心默认联系人与收货地址)
+export interface UserDefaultContact {
+  id: string;
+  name: string; // 联系人
+  phone: string; // 手机号码
+  address: string; // 收获详细地址
+  isDefault?: boolean; // 是否默认
+  tag?: string; // 标签，如 '家' | '公司' | '新房'
+  createdAt?: string;
 }
 
 // User Profile
@@ -219,6 +244,49 @@ export interface UserProfile {
   vipLevel?: string;
   consultantName?: string;
   consultantPhone?: string;
+  balance?: number; // 用户App端已有余额
+  coupons?: CustomerCoupon[]; // 用户App端已有优惠券
+  defaultContacts?: UserDefaultContact[]; // 个人中心多组默认联系人与收货地址
+}
+
+// ---------------------------------------------------------------------------
+// Customer Coupons (优惠券)
+// ---------------------------------------------------------------------------
+export interface CustomerCoupon {
+  id: string;
+  name: string; // 优惠券名称
+  type: 'amount' | 'discount' | 'voucher'; // 'amount' (满减), 'discount' (折扣), 'voucher' (代金券/无门槛)
+  value: number; // 面值金额 (如 1000, 2000) 或 折扣率 (如 8.8, 9.5)
+  minSpend: number; // 使用门槛，0为无门槛，大于0为满减金额
+  validStartDate: string; // 有效期起始: "2026-08-01"
+  validEndDate: string; // 有效期截止: "2026-12-31"
+  status: 'usable' | 'used' | 'expired'; // 状态: 可使用 | 已使用 | 已过期
+  applicableScope?: string; // 适用范围，例如 "全屋智能定制方案 / 智能照明 / 窗帘电机"
+  code?: string; // 优惠券券码
+  description?: string; // 优惠说明
+  createdAt?: string;
+  assignedCustomerId?: string; // 若指定客户发放
+}
+
+// ---------------------------------------------------------------------------
+// Balance Audit Request (余额变更与财务审核)
+// ---------------------------------------------------------------------------
+export interface BalanceAuditRequest {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  originalBalance: number; // 原余额
+  targetBalance: number; // 希望更改余额
+  changeAmount: number; // 调整变动金额 (targetBalance - originalBalance)
+  remark: string; // 提交备注
+  paymentProofUrl: string; // 付款截图
+  applicant: string; // 申请人 / 提交人
+  submittedAt: string; // 提交时间
+  status: 'pending_finance' | 'approved' | 'rejected'; // 待财务审核 | 财务已通过 | 财务已驳回
+  financeReviewer?: string; // 财务审核人员
+  financeReviewedAt?: string; // 财务审核时间
+  financeNote?: string; // 财务审核意见
 }
 
 export interface PlanChatMessage {
@@ -265,6 +333,11 @@ export interface SavedPlanRecord {
   chatHistory?: PlanChatMessage[]; // 客户沟通与AI对话记录
   consultantName?: string;
   consultantPhone?: string;
+  appliedCouponId?: string;
+  appliedCouponName?: string;
+  couponDiscountAmount?: number;
+  orderPaidAmount?: number;
+  customerAddress?: string;
 }
 
 // Curated Plan Template
@@ -328,9 +401,9 @@ export interface Customer {
   projectName: string; // 项目名称, e.g. "谷家智能测试"
   phone: string; // 客户电话
   followUpStatus: string; // 跟进状态, e.g. "未跟进", "08-18 16:26", "已出方案", "待签约"
-  status: CustomerStatus; // 客户状态: '资源客户' | '意向客户' | '签约客户' | '丢单客户'
-  deliveryStatus: DeliveryStatus; // 交付状态: '未交付' | '施工中' | '已交付'
-  priceGrade: PriceGrade; // 价格等级: '普通级别' | '高端级别' | '尊享级别'
+  status?: CustomerStatus; // 客户状态: 可选
+  deliveryStatus?: DeliveryStatus; // 交付状态: 可选
+  priceGrade?: PriceGrade; // 价格等级: 可选
   salesperson: string; // 业务员 / 销售顾问
   creator: string; // 创建人
   createdAt: string; // 创建时间: "2026-08-18 16:28"
@@ -343,12 +416,16 @@ export interface Customer {
   auditStatus?: 'pending' | 'certified' | 'reviewing' | 'rejected' | 'approved'; // 审核状态
   auditFeedback?: string; // 审核反馈意见
   assignedTo?: string; // 指派商务/销售顾问
+  assignedBusiness?: string; // 商务 (负责商务沟通、报价与签约)
+  assignedOperations?: string; // 对应运营 (负责方案排期、交付施工与客户跟进)
+  balance?: number; // 客户已有余额 (元)
+  coupons?: CustomerCoupon[]; // 客户已有优惠券列表
   avatar?: string; // 客户头像
   memo?: string; // 客户便签
   region: string; // 所属地区, e.g. "北京-北京-朝阳"
   detailAddress: string; // 详细地址, e.g. "北京顺义区大槐树镇"
   source: string; // 客户来源, e.g. "上门用户", "朋友推荐", "广告投放", "渠道介绍"
-  level: CustomerLevel; // 客户级别, e.g. "普通客户", "VIP客户"
+  level?: CustomerLevel; // 客户级别 (可选)
   category: CustomerType; // 客户类别, e.g. "家装客户"
   designer?: string; // 家装设计师
   firstContactDate?: string; // 初次接触时间

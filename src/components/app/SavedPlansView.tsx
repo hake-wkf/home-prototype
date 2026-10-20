@@ -29,6 +29,7 @@ import {
   RenovationProject,
   ShippingTimelineNode,
   UserProfile,
+  ShipmentPackage,
 } from '../../types';
 import { AdminStorageManager } from '../../utils/adminStorage';
 import { CustomerRecordInfoModal } from './CustomerRecordInfoModal';
@@ -194,6 +195,9 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
   const [editCost, setEditCost] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
+  // Delete Plan Confirmation Modal State
+  const [deletingPlan, setDeletingPlan] = useState<SavedPlanRecord | null>(null);
+
   // Clone Plan with Custom Name Modal State
   const [cloningPlan, setCloningPlan] = useState<SavedPlanRecord | null>(null);
   const [cloneName, setCloneName] = useState('');
@@ -234,23 +238,15 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     return () => window.removeEventListener('click', handleOutsideClick);
   }, []);
 
-  // Filter plans based on keyword and stage tab
+  // Filter plans based on keyword
   const filteredPlans = savedPlans.filter((plan) => {
-    const stageInfo = getPlanStage(plan);
-
-    if (selectedStage !== 'all' && stageInfo.key !== selectedStage) {
-      return false;
-    }
-
     if (keyword.trim()) {
       const q = keyword.toLowerCase().trim();
       const match =
         plan.title.toLowerCase().includes(q) ||
         plan.communityName.toLowerCase().includes(q) ||
-        (plan.orderStatusLabel && plan.orderStatusLabel.toLowerCase().includes(q)) ||
-        (plan.logisticsInfo?.orderNumber && plan.logisticsInfo.orderNumber.toLowerCase().includes(q)) ||
-        (plan.logisticsInfo?.trackingNumber && plan.logisticsInfo.trackingNumber.toLowerCase().includes(q)) ||
-        (plan.tags && plan.tags.some((t) => t.toLowerCase().includes(q)));
+        (plan.customerName && plan.customerName.toLowerCase().includes(q)) ||
+        (plan.customerPhone && plan.customerPhone.includes(q));
       if (!match) return false;
     }
     return true;
@@ -411,84 +407,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     }, 250);
   };
 
-  // Step 2 -> Step 3: Approve & Ship
-  const handleApproveAndShip = (plan: SavedPlanRecord) => {
-    const existingLogistics = plan.logisticsInfo;
-    const nowTime = new Date().toLocaleString('zh-CN', { hour12: false });
-    const orderNo =
-      existingLogistics?.orderNumber ||
-      'ORD' +
-        new Date().toISOString().slice(0, 10).replace(/-/g, '') +
-        Math.floor(100 + Math.random() * 900);
-    const sfTrackingNo = 'SF' + Math.floor(100000000000 + Math.random() * 900000000000);
-
-    const timelineNodes: ShippingTimelineNode[] = [
-      {
-        status: 'contact_sales',
-        stepNumber: 1,
-        title: '1. 待对接 · 提交采购清单',
-        description: `客户【${existingLogistics?.recipientName || '智家用户'}】已提交采购清单`,
-        time: existingLogistics?.timeline[0]?.time || nowTime,
-        done: true,
-      },
-      {
-        status: 'reviewing',
-        stepNumber: 2,
-        title: '2. 审核中 · 图纸核算与排期已通过',
-        description: '商务经理 王浩 (186-0010-8899) 已完成方案图纸复核与出库签约',
-        time: nowTime,
-        done: true,
-      },
-      {
-        status: 'shipping',
-        stepNumber: 3,
-        title: `3. 已发货 (订单号: ${orderNo})`,
-        description: `顺丰速运【${sfTrackingNo}】已揽收，正在极速陆运派送中`,
-        time: nowTime,
-        done: true,
-        active: true,
-      },
-      {
-        status: 'delivered',
-        stepNumber: 4,
-        title: '4. 已签收 · 派送与当面验货交付',
-        description: '预计将于明日送达指定地址，请保持电话畅通',
-        time: '预计明日 16:00',
-        done: false,
-      },
-    ];
-
-    const updatedPlan: SavedPlanRecord = {
-      ...plan,
-      status: '施工中',
-      orderStatus: 'shipping',
-      orderStatusLabel: '已发货',
-      logisticsInfo: {
-        orderNumber: orderNo,
-        carrier: '顺丰速运 (SF-Express)',
-        trackingNumber: sfTrackingNo,
-        shippingDate: nowTime,
-        estimatedArrivalDate: '预计 1-2 日送达',
-        recipientName: existingLogistics?.recipientName || '卫科帆',
-        recipientPhone: existingLogistics?.recipientPhone || '17696180841',
-        shippingAddress: existingLogistics?.shippingAddress || '北京市朝阳区客户指定收货地址',
-        businessManagerName: existingLogistics?.businessManagerName || '王浩 (专属商务经理)',
-        businessManagerPhone: existingLogistics?.businessManagerPhone || '186-0010-8899',
-        businessManagerWechat: existingLogistics?.businessManagerWechat || 'zhijia_wanghao',
-        notes: existingLogistics?.notes || '全套智能设备保价发运',
-        currentStepIndex: 2,
-        timeline: timelineNodes,
-      },
-    };
-
-    onUpdatePlan(updatedPlan);
-    if (trackingPlan?.id === plan.id) {
-      setTrackingPlan(updatedPlan);
-    }
-    showToast(`审核通过！已生成顺丰单号【${sfTrackingNo}】`);
-  };
-
-  // Step 3 -> Step 4: Confirm Delivered
+  // Step 3 -> Step 4: Confirm Delivered (小程序端确认签收)
   const handleConfirmDelivered = (plan: SavedPlanRecord) => {
     const existingLogistics = plan.logisticsInfo;
     const nowTime = new Date().toLocaleString('zh-CN', { hour12: false });
@@ -507,12 +426,17 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         status: 'delivered',
         stepNumber: 4,
         title: '4. 已签收 · 客户当面验货并签收完成',
-        description: `快件已送达并由业主【${existingLogistics?.recipientName || '客户'}】本人签收`,
+        description: `全部包裹与设备均已送达并由业主【${existingLogistics?.recipientName || '客户'}】本人签收`,
         time: nowTime,
         done: true,
         active: true,
       };
     }
+
+    const updatedPackages = (existingLogistics?.packages || []).map((pkg) => ({
+      ...pkg,
+      status: 'delivered' as const,
+    }));
 
     const updatedPlan: SavedPlanRecord = {
       ...plan,
@@ -521,8 +445,12 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       orderStatusLabel: '已签收',
       logisticsInfo: {
         orderNumber: orderNo,
-        carrier: existingLogistics?.carrier || '顺丰速运 (SF-Express)',
+        carrier: existingLogistics?.carrier || '顺丰速运',
         trackingNumber: sfTrackingNo,
+        trackingNumbers: existingLogistics?.trackingNumbers || [sfTrackingNo],
+        packages: updatedPackages.length > 0 ? updatedPackages : undefined,
+        totalProgress: 100,
+        totalProgressLabel: '总发货进度 100% · 全部发货单已签收',
         shippingDate: existingLogistics?.shippingDate || '2026-08-20 08:30',
         estimatedArrivalDate: existingLogistics?.estimatedArrivalDate || '已送达',
         deliveredDate: nowTime,
@@ -542,7 +470,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     if (trackingPlan?.id === plan.id) {
       setTrackingPlan(updatedPlan);
     }
-    showToast('已确认签收！设备顺利交付');
+    showToast('已确认签收！设备顺利交付完成');
   };
 
   return (
@@ -590,31 +518,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         </button>
       </div>
 
-      {/* 3. 筛选 Tab 重构 (全部 / 待对接 / 审核中 / 已发货 / 已签收) - 横向滚动 */}
-      <div className="overflow-x-auto no-scrollbar py-0.5 flex items-center space-x-2">
-        {[
-          { key: 'all' as const, label: '全部' },
-          { key: 'contact_sales' as const, label: '待对接' },
-          { key: 'reviewing' as const, label: '审核中' },
-          { key: 'shipping' as const, label: '已发货' },
-          { key: 'delivered' as const, label: '已签收' },
-        ].map((tab) => {
-          const isActive = selectedStage === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setSelectedStage(tab.key)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+
 
       {/* Plans List */}
       <div className="space-y-3">
@@ -627,27 +531,17 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
             <div className="space-y-1">
               <h4 className="text-sm font-extrabold text-slate-900">还没有方案记录</h4>
               <p className="text-xs text-slate-400">
-                {selectedStage !== 'all'
-                  ? `暂无处于【${
-                      selectedStage === 'contact_sales'
-                        ? '待对接'
-                        : selectedStage === 'reviewing'
-                        ? '审核中'
-                        : selectedStage === 'shipping'
-                        ? '已发货'
-                        : '已签收'
-                    }】阶段的方案`
-                  : '在工作台完成房间与设备规划后即可保存方案'}
+                {keyword ? '未找到符合条件的方案，请尝试其他关键词' : '在工作台完成房间与设备规划后即可保存方案'}
               </p>
             </div>
 
             <div className="pt-2 flex items-center justify-center space-x-2">
-              {selectedStage !== 'all' && (
+              {keyword && (
                 <button
-                  onClick={() => setSelectedStage('all')}
+                  onClick={() => setKeyword('')}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
                 >
-                  查看全部
+                  清除搜索
                 </button>
               )}
               <button
@@ -672,207 +566,44 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                 onClick={() => handleCardClick(plan)}
                 className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-3.5 shadow-2xs hover:shadow-sm transition-all space-y-3 cursor-pointer relative"
               >
-                {/* Header Row: Title + Clone Tag + More Menu & Price */}
+                {/* Header Row: Title + Clone Tag + Price */}
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0 mr-2 space-y-1">
-                    {/* Title + 5. 副本标记优化 (从标题中拆出，改为浅灰底圆角11px小Tag) */}
+                    {/* Title (已去掉方案状态与方案标签) */}
                     <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                      <h3 className="text-xs font-extrabold text-slate-900 truncate max-w-[200px]">
+                      <h3 className="text-xs font-extrabold text-slate-900 truncate max-w-[240px]">
                         {cleanTitle}
                       </h3>
-                      {isClone && (
-                        <span className="px-1.5 py-0.2 bg-slate-100 text-slate-500 border border-slate-200/80 rounded-md text-[11px] font-medium leading-none shrink-0">
-                          副本
-                        </span>
-                      )}
-                      {/* 9. 状态颜色统一 Tag (无黄色) */}
-                      <span
-                        className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold border shrink-0 ${stage.badgeBg} ${stage.badgeText}`}
-                      >
-                        {stage.label}
-                      </span>
                     </div>
 
-                    {/* Room & Device Summary */}
+                    {/* Room & Update Time */}
                     <p className="text-[11px] text-slate-500 flex items-center space-x-1.5 truncate">
                       <span>📍 {plan.communityName}</span>
                       <span>·</span>
                       <span>{plan.roomsCount} 空间</span>
                       <span>·</span>
-                      <span>{plan.deviceCount || 20} 件设备</span>
+                      <span className="text-slate-400">{formatRelativeTime(plan.updatedAt || plan.createdAt)}</span>
                     </p>
-
-                    {/* 4. 卡片增加时间信息 (更新于 3 天前，灰色 12px，放在户型信息下方) */}
-                    <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                      <p className="text-xs text-slate-400">
-                        {formatRelativeTime(plan.updatedAt || plan.createdAt)}
-                      </p>
-                      {/* Customer Info Quick Preview Tag */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPlanForCustomerInfo(plan);
-                          setIsCustomerInfoModalOpen(true);
-                        }}
-                        className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-medium transition-colors cursor-pointer border border-slate-200/60"
-                        title="点击查看/编辑登记客户信息"
-                      >
-                        <User className="w-2.5 h-2.5 text-slate-500" />
-                        <span>客户: {plan.customerName || currentUser?.name || '卫科帆'}</span>
-                      </button>
-                    </div>
                   </div>
 
-                  {/* Right: Price + 6. 右上角 "⋯" 更多菜单 */}
-                  <div className="text-right shrink-0 flex flex-col items-end space-y-1">
-                    <div className="flex items-center space-x-1.5">
-                      <div className="text-right">
-                        <span className="text-sm font-black text-slate-900 font-mono">
-                          ¥{plan.totalCostTenThousand}万
-                        </span>
-                        {/* 10. "设备预算"文案改为"方案预估" */}
-                        <span className="text-[10px] text-slate-400 block leading-tight">
-                          方案预估
-                        </span>
-                      </div>
-
-                      {/* 6. 右上角 "⋯" 更多菜单按钮 */}
-                      <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuPlanId(isMenuOpen ? null : plan.id);
-                          }}
-                          className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          title="更多操作"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {isMenuOpen && (
-                          <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-30 animate-fadeIn text-xs">
-                            <button
-                              onClick={(e) => handleOpenCloneModal(plan, e)}
-                              className="w-full px-3 py-1.5 text-left text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer font-medium"
-                            >
-                              <Copy className="w-3.5 h-3.5 text-slate-400" />
-                              <span>复制方案</span>
-                            </button>
-                            <button
-                              onClick={(e) => handleOpenEditPlan(plan, e)}
-                              className="w-full px-3 py-1.5 text-left text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer font-medium"
-                            >
-                              <Edit3 className="w-3.5 h-3.5 text-slate-400" />
-                              <span>重命名/编辑</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  {/* Right: Price */}
+                  <div className="text-right shrink-0">
+                    <span className="text-sm font-black text-slate-900 font-mono">
+                      ¥{plan.totalCostTenThousand}万
+                    </span>
+                    <span className="text-[10px] text-slate-400 block leading-tight">
+                      方案预估
+                    </span>
                   </div>
                 </div>
 
-                {/* 2. 进度改为 4 段迷你横向步骤条 (待对接 → 审核中 → 已发货 → 已签收) */}
-                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-150 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    {STAGE_STEPS.map((s, sIdx) => {
-                      const isCompleted = stage.step > s.step;
-                      const isCurrent = stage.step === s.step;
-
-                      return (
-                        <React.Fragment key={s.step}>
-                          {/* Step Node */}
-                          <div className="flex flex-col items-center space-y-1 shrink-0">
-                            <div
-                              className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all ${
-                                isCompleted
-                                  ? 'bg-emerald-500 text-white ring-2 ring-emerald-100'
-                                  : isCurrent
-                                  ? 'bg-slate-600 text-white ring-2 ring-slate-200'
-                                  : 'bg-slate-200 text-slate-400'
-                              }`}
-                            >
-                              {isCompleted ? (
-                                <Check className="w-3 h-3 stroke-[3]" />
-                              ) : isCurrent ? (
-                                <span className="w-1.5 h-1.5 rounded-full bg-white block animate-ping" />
-                              ) : (
-                                <span>{s.step}</span>
-                              )}
-                            </div>
-                            <span
-                              className={`text-[10px] font-medium whitespace-nowrap ${
-                                isCurrent
-                                  ? 'font-bold text-slate-700'
-                                  : isCompleted
-                                  ? 'text-emerald-700 font-semibold'
-                                  : 'text-slate-400'
-                              }`}
-                            >
-                              {s.label}
-                            </span>
-                          </div>
-
-                          {/* Connector Line */}
-                          {sIdx < STAGE_STEPS.length - 1 && (
-                            <div
-                              className={`flex-1 h-[2px] mx-1 rounded transition-all ${
-                                stage.step > s.step ? 'bg-emerald-400' : 'bg-slate-200'
-                              }`}
-                            />
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </div>
-
-                  {/* 8. 已发货状态增强 (支持点击复制单号 + 物流详情 >) */}
-                  {stage.step >= 3 && plan.logisticsInfo?.trackingNumber && (
-                    <div
-                      className="pt-1.5 border-t border-slate-200/80 flex items-center justify-between text-[11px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center space-x-1.5 text-slate-600">
-                        <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>顺丰速运:</span>
-                        <span className="font-mono font-bold text-blue-700">
-                          {plan.logisticsInfo.trackingNumber}
-                        </span>
-                        {plan.logisticsInfo.trackingNumber !== '待出库分配' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyText(plan.logisticsInfo?.trackingNumber || '', '顺丰单号');
-                            }}
-                            className="p-0.5 text-slate-400 hover:text-blue-700 cursor-pointer"
-                            title="复制快递单号"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTrackingPlan(plan);
-                        }}
-                        className="text-blue-600 font-bold hover:text-blue-700 flex items-center space-x-0.5 cursor-pointer"
-                      >
-                        <span>物流详情 &gt;</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 6. 操作区：同一行展示 导入定制、编辑、删除、复制 (去掉存为模板) */}
+                {/* 操作区：同一行展示 导入定制、编辑、客户信息、复制、删除 */}
                 <div
                   className="flex items-center justify-between pt-1.5 border-t border-slate-150"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center space-x-1 sm:space-x-1.5">
-                    {/* 导入定制：小按钮 */}
+                    {/* 导入定制 */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -903,22 +634,36 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                         setIsCustomerInfoModalOpen(true);
                       }}
                       className="py-1 px-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1 shrink-0"
-                      title="展示与编辑登记客户信息 (客户名称、客户手机号、客户手输记录)"
+                      title="展示与编辑登记客户信息"
                     >
                       <UserCheck className="w-3 h-3 text-slate-500" />
                       <span>客户信息</span>
                     </button>
                   </div>
 
-                  {/* 复制方案 */}
-                  <button
-                    onClick={(e) => handleOpenCloneModal(plan, e)}
-                    className="py-1 px-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1 shrink-0"
-                    title="复制方案副本"
-                  >
-                    <Copy className="w-3 h-3 text-slate-400" />
-                    <span>复制</span>
-                  </button>
+                  <div className="flex items-center space-x-1">
+                    {/* 复制方案 */}
+                    <button
+                      onClick={(e) => handleOpenCloneModal(plan, e)}
+                      className="py-1 px-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1 shrink-0"
+                      title="复制方案副本"
+                    >
+                      <Copy className="w-3 h-3 text-slate-400" />
+                      <span>复制</span>
+                    </button>
+
+                    {/* 删除方案 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingPlan(plan);
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                      title="删除此方案"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -926,11 +671,11 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         )}
       </div>
 
-      {/* 5. 复制方案重命名弹窗 (ClonePlanModal) */}
+      {/* 5. 复制方案重命名弹窗 (ClonePlanModal) - 规格统一 */}
       {cloningPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
+          <div className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-2">
                 <Copy className="w-4 h-4 text-slate-300" />
                 <h3 className="font-extrabold text-sm">创建方案副本</h3>
@@ -943,7 +688,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
               </button>
             </div>
 
-            <div className="p-4 space-y-3 text-xs">
+            <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
               <div>
                 <label className="text-[11px] font-bold text-slate-700 block mb-1">
                   副本方案名称
@@ -962,7 +707,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
               </div>
             </div>
 
-            <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2">
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2 shrink-0">
               <button
                 onClick={() => setCloningPlan(null)}
                 className="flex-1 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 cursor-pointer"
@@ -980,11 +725,11 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         </div>
       )}
 
-      {/* EDIT / RENAME PLAN MODAL */}
+      {/* EDIT / RENAME PLAN MODAL - 规格统一 */}
       {editingPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
+          <div className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-2">
                 <Edit3 className="w-4 h-4 text-slate-300" />
                 <h3 className="font-extrabold text-sm">编辑方案记录</h3>
@@ -997,7 +742,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
               </button>
             </div>
 
-            <div className="p-4 space-y-3 text-xs">
+            <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
               <div>
                 <label className="text-[11px] font-bold text-slate-700 block mb-1">
                   方案名称
@@ -1049,7 +794,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
               </div>
             </div>
 
-            <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2">
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2 shrink-0">
               <button
                 onClick={() => setEditingPlan(null)}
                 className="flex-1 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 cursor-pointer"
@@ -1067,11 +812,11 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         </div>
       )}
 
-      {/* STEP 1: CONTACT SALES MODAL (待对接) */}
+      {/* STEP 1: CONTACT SALES MODAL (待对接) - 规格统一 */}
       {contactSalesPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/80 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
+          <div className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
               <div>
                 <div className="flex items-center space-x-1.5">
                   <span className="px-1.5 py-0.5 bg-slate-800 text-slate-200 font-bold rounded text-[10px] border border-slate-700">
@@ -1205,202 +950,300 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         </div>
       )}
 
-      {/* PROGRESS / LOGISTICS DETAILS MODAL */}
-      {trackingPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/80 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            {/* Header */}
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getPlanStage(trackingPlan).badgeBg} ${getPlanStage(trackingPlan).badgeText}`}>
-                    {getPlanStage(trackingPlan).label}
-                  </span>
-                  <span className="text-[11px] font-bold text-slate-300">方案交付与物流详情</span>
+      {/* 4. PROGRESS / LOGISTICS DETAILS MODAL - 规格统一 + 多发货单展示 + 后台审核 */}
+      {trackingPlan && (() => {
+        const stage = getPlanStage(trackingPlan);
+        const logistics = trackingPlan.logisticsInfo;
+
+        // 统一提取发货单列表：支持 packages 多单或单号兼容
+        const packageList: ShipmentPackage[] = logistics?.packages && logistics.packages.length > 0
+          ? logistics.packages
+          : logistics?.trackingNumber && logistics.trackingNumber !== '待出库分配'
+          ? [
+              {
+                packageId: 'pkg_default',
+                trackingNumber: logistics.trackingNumber,
+                title: '方案全套智能设备包裹',
+                carrier: logistics.carrier || '顺丰速运',
+                status: stage.step === 4 ? 'delivered' : 'shipping',
+              },
+            ]
+          : [];
+
+        // 计算发货进度
+        const totalProgress = logistics?.totalProgress ?? (stage.step === 4 ? 100 : stage.step === 3 ? 100 : 50);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
+            <div className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+              {/* Header */}
+              <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
+                <div className="min-w-0 pr-2">
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${stage.badgeBg} ${stage.badgeText}`}>
+                      {stage.label}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-300">发货进度与单号明细</span>
+                  </div>
+                  <h3 className="font-extrabold text-sm text-white mt-0.5 truncate">{trackingPlan.title}</h3>
                 </div>
-                <h3 className="font-extrabold text-sm text-white mt-0.5">{trackingPlan.title}</h3>
+                <button
+                  onClick={() => setTrackingPlan(null)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* 4-Step Progress Bar in Modal */}
+              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 shrink-0">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {STAGE_STEPS.map((s) => {
+                    const isDone = stage.step >= s.step;
+                    const isCurrent = stage.step === s.step;
+
+                    return (
+                      <div
+                        key={s.step}
+                        className={`text-center py-1.5 px-1 rounded-xl border transition-all ${
+                          isCurrent
+                            ? 'bg-slate-700 text-white font-bold border-slate-700 shadow-2xs'
+                            : isDone
+                            ? 'bg-emerald-50 text-emerald-800 font-bold border-emerald-200'
+                            : 'bg-white text-slate-400 border-slate-200'
+                        }`}
+                      >
+                        <span className="text-[10px] block truncate">{s.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
+                {/* 状态 2：审核中 (明确说明后台进行审核，无操作按钮，状态自动同步) */}
+                {stage.step === 2 && (
+                  <div className="p-3.5 bg-amber-50 border border-amber-200/90 rounded-2xl space-y-2">
+                    <div className="flex items-center space-x-2 text-amber-900 font-bold">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span className="text-xs">商务经理正在后台审核中</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      您的方案与采购清单已成功提交。后台商务经理正在复核图纸、设备清单并分配出库批次。
+                    </p>
+                    <div className="text-[11px] text-amber-700 bg-amber-100/60 p-2 rounded-xl flex items-center space-x-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>审核通过后后台将直接生成发货单出库，小程序将自动同步更新，无需您在此操作。</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 状态 3 或 4：总发货进度 + 多个发货单号展示 (单个只展示发货单号，总发货进度就行) */}
+                {stage.step >= 3 && (
+                  <>
+                    {/* 总发货进度模块 */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 flex items-center space-x-1.5">
+                          <Truck className="w-4 h-4 text-blue-600" />
+                          <span>总发货进度</span>
+                        </span>
+                        <span className="font-mono font-bold text-blue-600 text-sm">
+                          {totalProgress}%
+                        </span>
+                      </div>
+
+                      {/* 进度条 */}
+                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                          style={{ width: `${totalProgress}%` }}
+                        />
+                      </div>
+
+                      <div className="text-[11px] text-slate-600 flex items-center justify-between">
+                        <span>
+                          {logistics?.totalProgressLabel || (stage.step === 4 ? '全部发货单已签收' : '全部包裹已出库运输中')}
+                        </span>
+                        <span className="font-mono text-slate-400">
+                          共 {packageList.length} 个发货单
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 发货单明细列表 (只展示发货单号与复制操作) */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-0.5">
+                        <span className="flex items-center space-x-1.5">
+                          <Package className="w-3.5 h-3.5 text-slate-600" />
+                          <span>发货单明细</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-normal">点击单号可直接复制</span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {packageList.map((pkg, idx) => (
+                          <div
+                            key={pkg.packageId || idx}
+                            className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs"
+                          >
+                            <div className="space-y-1 min-w-0 pr-2">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-bold text-slate-900 truncate text-[11px]">
+                                  {pkg.title || `发货单 ${idx + 1}`}
+                                </span>
+                                <span
+                                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
+                                    pkg.status === 'delivered'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                  }`}
+                                >
+                                  {pkg.status === 'delivered' ? '已签收' : '运输中'}
+                                </span>
+                              </div>
+
+                              <div className="text-[11px] font-mono text-slate-600 flex items-center space-x-1.5">
+                                <span className="text-slate-400">发货单号:</span>
+                                <span className="font-bold text-blue-700 tracking-wider">
+                                  {pkg.trackingNumber}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => handleCopyText(pkg.trackingNumber, '发货单号')}
+                              className="px-2.5 py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600 flex items-center space-x-1 shrink-0 transition-colors cursor-pointer"
+                              title="复制发货单号"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>复制</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* 收货与商务信息 (简要卡片) */}
+                {logistics && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-[11px]">
+                    <div className="flex items-center justify-between text-slate-700">
+                      <span className="text-slate-400">订单编号</span>
+                      <div className="flex items-center space-x-1">
+                        <span className="font-mono font-bold text-slate-800">{logistics.orderNumber}</span>
+                        <button
+                          onClick={() => handleCopyText(logistics.orderNumber, '订单号')}
+                          className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-slate-700">
+                      <span className="text-slate-400">专属商务</span>
+                      <span className="font-medium text-slate-800">
+                        {logistics.businessManagerName} ({logistics.businessManagerPhone})
+                      </span>
+                    </div>
+
+                    <div className="flex items-start justify-between text-slate-700 pt-1 border-t border-slate-200/60">
+                      <span className="text-slate-400 shrink-0 mr-2">收件地址</span>
+                      <span className="text-right text-slate-800 leading-snug">
+                        {logistics.recipientName} ({logistics.recipientPhone})<br />
+                        {logistics.shippingAddress}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Actions - 小程序端无审核按钮 */}
+              <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2 shrink-0">
+                {stage.step === 2 && (
+                  <button
+                    onClick={() => {
+                      if (logistics?.businessManagerPhone) {
+                        handleCopyText(logistics.businessManagerPhone, '商务经理电话');
+                      }
+                      showToast('已复制专属商务经理电话，可随时沟通审核进度');
+                    }}
+                    className="flex-1 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-slate-500" />
+                    <span>联系专属商务</span>
+                  </button>
+                )}
+
+                {stage.step === 3 && (
+                  <button
+                    onClick={() => handleConfirmDelivered(trackingPlan)}
+                    className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1"
+                  >
+                    <PackageCheck className="w-3.5 h-3.5" />
+                    <span>确认全部已签收</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setTrackingPlan(null)}
+                  className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 5. DELETE PLAN CONFIRMATION MODAL - 规格统一 */}
+      {deletingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
+          <div className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-2">
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                <h3 className="font-extrabold text-sm">删除方案确认</h3>
               </div>
               <button
-                onClick={() => setTrackingPlan(null)}
+                onClick={() => setDeletingPlan(null)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* 4-Step Progress Bar in Modal */}
-            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 shrink-0">
-              <div className="grid grid-cols-4 gap-1.5">
-                {STAGE_STEPS.map((s) => {
-                  const currentStep = getPlanStage(trackingPlan).step;
-                  const isDone = currentStep >= s.step;
-                  const isCurrent = currentStep === s.step;
-
-                  return (
-                    <div
-                      key={s.step}
-                      className={`text-center py-1.5 px-1 rounded-xl border transition-all ${
-                        isCurrent
-                          ? 'bg-slate-700 text-white font-bold border-slate-700 shadow-2xs'
-                          : isDone
-                          ? 'bg-emerald-50 text-emerald-800 font-bold border-emerald-200'
-                          : 'bg-white text-slate-400 border-slate-200'
-                      }`}
-                    >
-                      <span className="text-[10px] block truncate">{s.label}</span>
-                    </div>
-                  );
-                })}
+            <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
+                <p className="text-xs font-bold text-rose-900">
+                  确定要删除方案【{deletingPlan.title}】吗？
+                </p>
+                <p className="text-[11px] text-rose-700 leading-relaxed">
+                  删除后方案及其空间选型数据将无法恢复，请谨慎操作。
+                </p>
               </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
-              {/* Key Credentials Card */}
-              {trackingPlan.logisticsInfo && (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">订单编号</span>
-                    <div className="flex items-center space-x-1.5">
-                      <span className="font-bold text-slate-900 font-mono">
-                        {trackingPlan.logisticsInfo.orderNumber}
-                      </span>
-                      <button
-                        onClick={() =>
-                          handleCopyText(trackingPlan.logisticsInfo?.orderNumber || '', '订单号')
-                        }
-                        className="p-1 text-slate-400 hover:text-slate-900 cursor-pointer"
-                        title="复制订单号"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {getPlanStage(trackingPlan).step >= 3 && (
-                    <>
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-500 font-medium">承运快递</span>
-                        <span className="font-bold text-slate-900">
-                          {trackingPlan.logisticsInfo.carrier}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-500 font-medium">顺丰快递单号</span>
-                        <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-blue-700 font-mono">
-                            {trackingPlan.logisticsInfo.trackingNumber}
-                          </span>
-                          {trackingPlan.logisticsInfo.trackingNumber !== '待出库分配' && (
-                            <button
-                              onClick={() =>
-                                handleCopyText(
-                                  trackingPlan.logisticsInfo?.trackingNumber || '',
-                                  '顺丰单号'
-                                )
-                              }
-                              className="p-1 text-slate-400 hover:text-blue-700 cursor-pointer"
-                              title="复制快递单号"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
-                    <span className="text-slate-500 font-medium">专属商务</span>
-                    <span className="text-slate-800 font-medium">
-                      {trackingPlan.logisticsInfo.businessManagerName} (
-                      {trackingPlan.logisticsInfo.businessManagerPhone})
-                    </span>
-                  </div>
-
-                  <div className="flex items-start justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium shrink-0 mr-2">收货信息</span>
-                    <span className="text-slate-800 text-right">
-                      {trackingPlan.logisticsInfo.recipientName} (
-                      {trackingPlan.logisticsInfo.recipientPhone})<br />
-                      {trackingPlan.logisticsInfo.shippingAddress}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Timeline Nodes */}
-              {trackingPlan.logisticsInfo?.timeline && (
-                <div className="space-y-2">
-                  <h4 className="font-extrabold text-slate-900 text-xs flex items-center space-x-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-600" />
-                    <span>进度节点记录</span>
-                  </h4>
-
-                  <div className="space-y-3 pl-1 border-l-2 border-slate-200 ml-2.5">
-                    {trackingPlan.logisticsInfo.timeline.map((node, idx) => (
-                      <div key={idx} className="relative pl-4 space-y-0.5">
-                        <div
-                          className={`absolute -left-[9px] top-1 w-3 h-3 rounded-full border-2 border-white ${
-                            node.done
-                              ? 'bg-emerald-500 ring-2 ring-emerald-200'
-                              : node.active
-                              ? 'bg-blue-500 ring-2 ring-blue-200 animate-pulse'
-                              : 'bg-slate-300'
-                          }`}
-                        />
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`font-bold text-xs ${
-                              node.done
-                                ? 'text-slate-900'
-                                : node.active
-                                ? 'text-blue-900'
-                                : 'text-slate-400'
-                            }`}
-                          >
-                            {node.title}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">{node.time}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                          {node.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Actions */}
             <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2 shrink-0">
-              {getPlanStage(trackingPlan).step === 2 && (
-                <button
-                  onClick={() => handleApproveAndShip(trackingPlan)}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1"
-                >
-                  <Truck className="w-3.5 h-3.5" />
-                  <span>审核通过并生成顺丰单号发货</span>
-                </button>
-              )}
-
-              {getPlanStage(trackingPlan).step === 3 && (
-                <button
-                  onClick={() => handleConfirmDelivered(trackingPlan)}
-                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1"
-                >
-                  <PackageCheck className="w-3.5 h-3.5" />
-                  <span>确认客户已验货签收</span>
-                </button>
-              )}
-
               <button
-                onClick={() => setTrackingPlan(null)}
-                className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                onClick={() => setDeletingPlan(null)}
+                className="flex-1 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 cursor-pointer"
               >
-                关闭
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  onDeletePlan(deletingPlan.id);
+                  setDeletingPlan(null);
+                  showToast('方案已删除');
+                }}
+                className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
+              >
+                确认删除
               </button>
             </div>
           </div>

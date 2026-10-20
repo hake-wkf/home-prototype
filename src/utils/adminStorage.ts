@@ -14,6 +14,9 @@ import {
   CustomQuotationRecord,
   FloorPlanDesignProject,
   PlanChatMessage,
+  CustomerCoupon,
+  BalanceAuditRequest,
+  UserDefaultContact,
 } from '../types';
 import { LAYOUT_PRESETS, DEFAULT_ROOM_TEMPLATES, DEVICE_SERIES_LIST } from '../data/presetData';
 import { INITIAL_PLAN_TEMPLATES } from '../data/planTemplatesData';
@@ -33,7 +36,128 @@ const STORAGE_KEYS = {
   PLAN_TEMPLATES: 'zhijia_app_plan_templates_v1',
   CUSTOM_QUOTATIONS: 'zhijia_admin_custom_quotations_v1',
   FLOOR_POINT_DESIGNS: 'zhijia_admin_floor_point_designs_v1',
+  COUPONS: 'zhijia_admin_coupons_v1',
+  BALANCE_AUDIT_REQUESTS: 'zhijia_admin_balance_audit_requests_v1',
+  DEFAULT_CONTACTS: 'zhijia_app_default_contacts_v1',
 };
+
+// ---------------------------------------------------------------------------
+// Initial Customer Coupons (已去掉新客签约全屋智享立减券)
+// ---------------------------------------------------------------------------
+export const INITIAL_COUPONS: CustomerCoupon[] = [
+  {
+    id: 'cpn_001',
+    name: '全屋智能主机专享券',
+    type: 'amount',
+    value: 1500,
+    minSpend: 20000,
+    validStartDate: '2026-08-01',
+    validEndDate: '2026-12-31',
+    status: 'usable',
+    applicableScope: '全屋智能主机网关、多模Hub与中枢网络核心',
+    code: 'HUB1500',
+    description: '方案总预算满2万元立减1500元',
+    createdAt: '2026-08-01 10:00',
+  },
+  {
+    id: 'cpn_002',
+    name: '全宅深度调光专属抵用金',
+    type: 'voucher',
+    value: 1000,
+    minSpend: 0,
+    validStartDate: '2026-08-10',
+    validEndDate: '2026-11-30',
+    status: 'usable',
+    applicableScope: '磁吸轨道灯具与无主灯调光电源驱动器',
+    code: 'LIGHT1000',
+    description: '无门槛直减1000元，可在方案核算时全额冲抵设备款',
+    createdAt: '2026-08-10 14:00',
+  },
+  {
+    id: 'cpn_003',
+    name: '金牌尊享方案9.2折特惠券',
+    type: 'discount',
+    value: 9.2,
+    minSpend: 50000,
+    validStartDate: '2026-08-15',
+    validEndDate: '2026-12-31',
+    status: 'usable',
+    applicableScope: '全屋智能硬件产品库全品类',
+    code: 'VIP92',
+    description: '方案总价满5万元享整单9.2折特惠结算',
+    createdAt: '2026-08-15 09:30',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Initial Default Contacts (个人中心多组默认联系人与收货地址)
+// ---------------------------------------------------------------------------
+export const INITIAL_DEFAULT_CONTACTS: UserDefaultContact[] = [
+  {
+    id: 'ct_01',
+    name: '卫科帆',
+    phone: '17696180841',
+    address: '北京市朝阳区万科翡翠公园 6号楼2单元1201室',
+    isDefault: true,
+    tag: '新房',
+    createdAt: '2026-08-18 10:00',
+  },
+  {
+    id: 'ct_02',
+    name: '卫先生 (备用/父母家)',
+    phone: '13811223344',
+    address: '北京市海淀区中关村南大街1号院 3号楼502室',
+    isDefault: false,
+    tag: '父母家',
+    createdAt: '2026-08-19 14:00',
+  },
+  {
+    id: 'ct_03',
+    name: '卫经理 (公司收件)',
+    phone: '17696180841',
+    address: '北京市朝阳区望京SOHO T3 A座 2206室',
+    isDefault: false,
+    tag: '公司',
+    createdAt: '2026-08-20 09:30',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Initial Balance Audit Requests (财务审核)
+// ---------------------------------------------------------------------------
+export const INITIAL_BALANCE_AUDIT_REQUESTS: BalanceAuditRequest[] = [
+  {
+    id: 'bar_001',
+    customerId: 'cust_2',
+    customerName: '卫科帆',
+    customerPhone: '17696180841',
+    originalBalance: 21800,
+    targetBalance: 26800,
+    changeAmount: 5000,
+    remark: '客户通过企业网银对公转账二期工程设备款预付款 5000 元，申请充值增加余额',
+    paymentProofUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
+    applicant: '王浩 (商务经理)',
+    submittedAt: '2026-08-20 10:15',
+    status: 'approved',
+    financeReviewer: '张财务 (财务总监)',
+    financeReviewedAt: '2026-08-20 10:45',
+    financeNote: '已核验招商银行企业对公电子回单，款项 5000.00 元已实收并入账，审核通过',
+  },
+  {
+    id: 'bar_002',
+    customerId: 'cust_1',
+    customerName: '测试客户',
+    customerPhone: '17696180841',
+    originalBalance: 12000,
+    targetBalance: 15000,
+    changeAmount: 3000,
+    remark: '客户补交三期灯光改造定金 3000 元，附微信商户支付交易流水凭证',
+    paymentProofUrl: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=600&auto=format&fit=crop&q=80',
+    applicant: '李伟 (商务顾问)',
+    submittedAt: '2026-08-20 11:30',
+    status: 'pending_finance',
+  },
+];
 
 export const INITIAL_USER_PROFILE: UserProfile = {
   id: 'usr_001',
@@ -42,8 +166,13 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   roleTitle: '智家全屋定制用户',
   city: '北京市 / 朝阳区',
+  communityName: '万科翡翠公园',
+  customNotes: '万科翡翠公园大平层方案，对客厅及主卧全色温调光与智能安防联动有明确需求。',
   isLoggedIn: true,
   createdAt: '2026-08-18 10:00',
+  balance: 26800,
+  coupons: INITIAL_COUPONS,
+  defaultContacts: INITIAL_DEFAULT_CONTACTS,
 };
 
 export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
@@ -72,7 +201,36 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
     logisticsInfo: {
       orderNumber: 'ORD20260819001',
       carrier: '顺丰速运 (SF-Express)',
-      trackingNumber: 'SF138982847294',
+      trackingNumber: 'SF138982847291',
+      trackingNumbers: ['SF138982847291', 'SF138982847292', 'SF138982847293'],
+      packages: [
+        {
+          packageId: 'pkg_001',
+          trackingNumber: 'SF138982847291',
+          title: '第 1 箱 · 智能主控与网络通信网关',
+          carrier: '顺丰速运',
+          status: 'shipping',
+          itemsSummary: '包含全屋核心网关、PoE交换机及无线Mesh中继',
+        },
+        {
+          packageId: 'pkg_002',
+          trackingNumber: 'SF138982847292',
+          title: '第 2 箱 · 智能照明与磁吸调光驱动电源',
+          carrier: '顺丰速运',
+          status: 'shipping',
+          itemsSummary: '包含客厅主卧深度调光驱动器及磁吸轨道配件',
+        },
+        {
+          packageId: 'pkg_003',
+          trackingNumber: 'SF138982847293',
+          title: '第 3 箱 · 智能面板与微波人体存在传感器',
+          carrier: '顺丰速运',
+          status: 'shipping',
+          itemsSummary: '包含全屋极简智能开关面板及双卫生间雷达感应器',
+        },
+      ],
+      totalProgress: 100,
+      totalProgressLabel: '总发货进度 100% · 共 3 个发货单已出库',
       shippingDate: '2026-08-20 08:30',
       estimatedArrivalDate: '2026-08-21 16:00',
       recipientName: '卫科帆',
@@ -295,6 +453,27 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
       orderNumber: 'ORD20260811004',
       carrier: '顺丰速运 (SF-Express)',
       trackingNumber: 'SF110992384721',
+      trackingNumbers: ['SF110992384721', 'SF110992384722'],
+      packages: [
+        {
+          packageId: 'pkg_101',
+          trackingNumber: 'SF110992384721',
+          title: '第 1 箱 · 大平层智能网关与背景音乐主机',
+          carrier: '顺丰速运',
+          status: 'delivered',
+          itemsSummary: '全宅总控网关、背景音乐功放模块与传感器',
+        },
+        {
+          packageId: 'pkg_102',
+          trackingNumber: 'SF110992384722',
+          title: '第 2 箱 · 全宅磁吸轨道射灯与电动开合帘电机',
+          carrier: '顺丰速运',
+          status: 'delivered',
+          itemsSummary: '深调光电源驱动器、四路开合电机与辅材',
+        },
+      ],
+      totalProgress: 100,
+      totalProgressLabel: '总发货进度 100% · 全部发货单已签收',
       shippingDate: '2026-08-13 09:00',
       estimatedArrivalDate: '2026-08-14 15:00',
       deliveredDate: '2026-08-14 15:20',
@@ -1220,15 +1399,311 @@ export class AdminStorageManager {
   static getCustomers(): Customer[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const parsed: Customer[] = JSON.parse(data);
+        return parsed.map((c, idx) => ({
+          ...c,
+          isPool: false, // 客户池功能已去掉，全部归属为我的客户
+          balance: typeof c.balance === 'number' ? c.balance : (idx === 0 ? 15000 : idx === 1 ? 26800 : idx === 2 ? 0 : 38000),
+          coupons: Array.isArray(c.coupons) ? c.coupons : INITIAL_COUPONS,
+          assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属商务经理)',
+          assignedOperations: c.assignedOperations || '赵敏 (交付运营专员)',
+        }));
+      }
     } catch (e) {
       console.error('Failed to parse customers', e);
     }
-    return INITIAL_CUSTOMERS;
+    return INITIAL_CUSTOMERS.map((c, idx) => ({
+      ...c,
+      isPool: false,
+      balance: typeof c.balance === 'number' ? c.balance : (idx === 0 ? 15000 : idx === 1 ? 26800 : idx === 2 ? 0 : 38000),
+      coupons: Array.isArray(c.coupons) ? c.coupons : INITIAL_COUPONS,
+      assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属商务经理)',
+      assignedOperations: c.assignedOperations || '赵敏 (交付运营专员)',
+    }));
   }
 
   static saveCustomers(customers: Customer[]): void {
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Coupons Management (优惠券创建与发放)
+  // ---------------------------------------------------------------------------
+  static getCoupons(): CustomerCoupon[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.COUPONS);
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error('Failed to parse coupons', e);
+    }
+    return INITIAL_COUPONS;
+  }
+
+  static saveCoupons(coupons: CustomerCoupon[]): void {
+    localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(coupons));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('coupons_updated', { detail: coupons }));
+    }
+  }
+
+  static addCoupon(coupon: CustomerCoupon): void {
+    const coupons = this.getCoupons();
+    const updated = [coupon, ...coupons];
+    this.saveCoupons(updated);
+  }
+
+  static issueCouponToCustomer(coupon: CustomerCoupon, customerId: string): void {
+    const customers = this.getCustomers();
+    const targetCust = customers.find((c) => c.id === customerId);
+    if (!targetCust) return;
+
+    const newCouponInstance: CustomerCoupon = {
+      ...coupon,
+      id: `cpn_inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      assignedCustomerId: customerId,
+      status: 'usable',
+      createdAt: `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`,
+    };
+
+    const updated = customers.map((c) => {
+      if (c.id === customerId) {
+        return {
+          ...c,
+          coupons: [newCouponInstance, ...(c.coupons || [])],
+        };
+      }
+      return c;
+    });
+    this.saveCustomers(updated);
+
+    // Also sync to current user profile if phone or id matches
+    try {
+      const userProfile = this.getUserProfile();
+      if (userProfile && (userProfile.id === customerId || userProfile.phone === targetCust.phone)) {
+        const updatedProfile = {
+          ...userProfile,
+          coupons: [newCouponInstance, ...(userProfile.coupons || [])],
+        };
+        this.saveUserProfile(updatedProfile);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Default Contacts & Addresses (个人中心多组默认联系人与收货地址 - FEATURE 12)
+  // ---------------------------------------------------------------------------
+  static getDefaultContacts(): UserDefaultContact[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.DEFAULT_CONTACTS);
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error('Failed to parse default contacts', e);
+    }
+    return INITIAL_DEFAULT_CONTACTS;
+  }
+
+  static saveDefaultContacts(contacts: UserDefaultContact[]): void {
+    localStorage.setItem(STORAGE_KEYS.DEFAULT_CONTACTS, JSON.stringify(contacts));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('default_contacts_updated', { detail: contacts }));
+    }
+    // Also sync to user profile
+    try {
+      const profile = this.getUserProfile();
+      if (profile) {
+        localStorage.setItem(
+          STORAGE_KEYS.USER_PROFILE,
+          JSON.stringify({ ...profile, defaultContacts: contacts })
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  static addDefaultContact(contact: UserDefaultContact): void {
+    const list = this.getDefaultContacts();
+    let updated = [contact, ...list];
+    if (contact.isDefault) {
+      updated = updated.map((c) => ({
+        ...c,
+        isDefault: c.id === contact.id,
+      }));
+    }
+    this.saveDefaultContacts(updated);
+  }
+
+  static updateDefaultContact(contact: UserDefaultContact): void {
+    const list = this.getDefaultContacts();
+    let updated = list.map((c) => (c.id === contact.id ? contact : c));
+    if (contact.isDefault) {
+      updated = updated.map((c) => ({
+        ...c,
+        isDefault: c.id === contact.id,
+      }));
+    }
+    this.saveDefaultContacts(updated);
+  }
+
+  static deleteDefaultContact(id: string): void {
+    const list = this.getDefaultContacts();
+    const updated = list.filter((c) => c.id !== id);
+    if (updated.length > 0 && !updated.some((c) => c.isDefault)) {
+      updated[0].isDefault = true;
+    }
+    this.saveDefaultContacts(updated);
+  }
+
+  static setDefaultContact(id: string): void {
+    const list = this.getDefaultContacts();
+    const updated = list.map((c) => ({
+      ...c,
+      isDefault: c.id === id,
+    }));
+    this.saveDefaultContacts(updated);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Balance Audit & Financial Review (更改余额与财务审核)
+  // ---------------------------------------------------------------------------
+  static getBalanceAuditRequests(): BalanceAuditRequest[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.BALANCE_AUDIT_REQUESTS);
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error('Failed to parse balance audit requests', e);
+    }
+    return INITIAL_BALANCE_AUDIT_REQUESTS;
+  }
+
+  static saveBalanceAuditRequests(requests: BalanceAuditRequest[]): void {
+    localStorage.setItem(STORAGE_KEYS.BALANCE_AUDIT_REQUESTS, JSON.stringify(requests));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('balance_audit_updated', { detail: requests }));
+    }
+  }
+
+  static submitBalanceAdjustment(req: BalanceAuditRequest): void {
+    const requests = this.getBalanceAuditRequests();
+    const updated = [req, ...requests];
+    this.saveBalanceAuditRequests(updated);
+
+    // Add log in follow-up records
+    const fuList = this.getFollowUps();
+    const newFu: FollowUpRecord = {
+      id: `fu_bal_${Date.now()}`,
+      customerId: req.customerId,
+      time: req.submittedAt,
+      method: '提交余额更改申请',
+      matter: `提交客户【${req.customerName}】余额调整申请：原余额 ¥${req.originalBalance} 调整为 ¥${req.targetBalance} (变动 ${req.changeAmount >= 0 ? '+' : ''}${req.changeAmount}元)`,
+      result: `申请已流转至财务部门待审核，附凭证截图及备注：${req.remark}`,
+      type: '日志',
+      operator: req.applicant,
+    };
+    this.saveFollowUps([newFu, ...fuList]);
+  }
+
+  static approveBalanceAudit(requestId: string, reviewerName: string, note?: string): void {
+    const requests = this.getBalanceAuditRequests();
+    const req = requests.find((r) => r.id === requestId);
+    if (!req) return;
+
+    const nowStr = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
+    const updatedRequests = requests.map((r) => {
+      if (r.id === requestId) {
+        return {
+          ...r,
+          status: 'approved' as const,
+          financeReviewer: reviewerName,
+          financeReviewedAt: nowStr,
+          financeNote: note || '财务核验转账凭证与银行进账单无误，准予入账',
+        };
+      }
+      return r;
+    });
+    this.saveBalanceAuditRequests(updatedRequests);
+
+    // Update Customer Balance
+    const customers = this.getCustomers();
+    const updatedCustomers = customers.map((c) => {
+      if (c.id === req.customerId || c.phone === req.customerPhone) {
+        return {
+          ...c,
+          balance: req.targetBalance,
+          updatedAt: nowStr,
+        };
+      }
+      return c;
+    });
+    this.saveCustomers(updatedCustomers);
+
+    // Sync UserProfile if matches
+    try {
+      const userProfile = this.getUserProfile();
+      if (userProfile && (userProfile.id === req.customerId || userProfile.phone === req.customerPhone)) {
+        this.saveUserProfile({
+          ...userProfile,
+          balance: req.targetBalance,
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    // Add follow-up record
+    const fuList = this.getFollowUps();
+    const newFu: FollowUpRecord = {
+      id: `fu_appr_${Date.now()}`,
+      customerId: req.customerId,
+      time: nowStr,
+      method: '财务审核通过',
+      matter: `财务主管【${reviewerName}】审核通过余额调整，实际生效余额: ¥${req.targetBalance}`,
+      result: note || '已核验转账单真实到账，余额正式入账',
+      type: '日志',
+      operator: reviewerName,
+    };
+    this.saveFollowUps([newFu, ...fuList]);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('customer_balance_updated', { detail: { customerId: req.customerId, newBalance: req.targetBalance } }));
+    }
+  }
+
+  static rejectBalanceAudit(requestId: string, reviewerName: string, note?: string): void {
+    const requests = this.getBalanceAuditRequests();
+    const req = requests.find((r) => r.id === requestId);
+    if (!req) return;
+
+    const nowStr = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
+    const updatedRequests = requests.map((r) => {
+      if (r.id === requestId) {
+        return {
+          ...r,
+          status: 'rejected' as const,
+          financeReviewer: reviewerName,
+          financeReviewedAt: nowStr,
+          financeNote: note || '付款凭证模糊或银行流水未对上，已驳回',
+        };
+      }
+      return r;
+    });
+    this.saveBalanceAuditRequests(updatedRequests);
+
+    const fuList = this.getFollowUps();
+    const newFu: FollowUpRecord = {
+      id: `fu_rej_${Date.now()}`,
+      customerId: req.customerId,
+      time: nowStr,
+      method: '财务审核驳回',
+      matter: `财务主管【${reviewerName}】驳回余额调整申请`,
+      result: note || '凭证信息不符，请核实后重新提交',
+      type: '日志',
+      operator: reviewerName,
+    };
+    this.saveFollowUps([newFu, ...fuList]);
   }
 
   // CRM Follow-up Records
@@ -1250,15 +1725,29 @@ export class AdminStorageManager {
   static getUserProfile(): UserProfile {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const parsed: UserProfile = JSON.parse(data);
+        return {
+          ...parsed,
+          balance: typeof parsed.balance === 'number' ? parsed.balance : 26800,
+          coupons: Array.isArray(parsed.coupons) ? parsed.coupons : INITIAL_COUPONS,
+          defaultContacts: Array.isArray(parsed.defaultContacts) ? parsed.defaultContacts : this.getDefaultContacts(),
+        };
+      }
     } catch (e) {
       console.error('Failed to parse user profile', e);
     }
-    return INITIAL_USER_PROFILE;
+    return {
+      ...INITIAL_USER_PROFILE,
+      defaultContacts: this.getDefaultContacts(),
+    };
   }
 
   static saveUserProfile(profile: UserProfile): void {
     localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('user_profile_updated', { detail: profile }));
+    }
   }
 
   // App Saved Plans (方案记录)
@@ -1295,6 +1784,9 @@ export class AdminStorageManager {
 
   static saveSavedPlans(plans: SavedPlanRecord[]): void {
     localStorage.setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(plans));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('saved_plans_updated', { detail: plans }));
+    }
   }
 
   static saveSingleSavedPlan(plan: SavedPlanRecord): void {
@@ -1302,6 +1794,133 @@ export class AdminStorageManager {
     const exists = plans.some((p) => p.id === plan.id);
     const updated = exists ? plans.map((p) => (p.id === plan.id ? plan : p)) : [plan, ...plans];
     this.saveSavedPlans(updated);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Customer Reported Plan Audit (客户上报方案记录审核 - FEATURE 6)
+  // ---------------------------------------------------------------------------
+  static approvePlanReport(
+    planId: string,
+    assignedBusiness: string,
+    assignedOperations: string,
+    note?: string
+  ): void {
+    const plans = this.getSavedPlans();
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    const nowStr = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
+    const timeline = plan.logisticsInfo?.timeline || [
+      {
+        status: 'contact_sales',
+        stepNumber: 1,
+        title: '1. 联系商务 · 提交采购需求',
+        description: `客户【${plan.customerName || '业主'}】已完成方案清单并提交`,
+        time: plan.createdAt || nowStr,
+        done: true,
+      },
+    ];
+
+    const updatedTimeline = timeline.map((n) => ({
+      ...n,
+      done: n.stepNumber <= 2 ? true : n.done,
+      active: n.stepNumber === 2,
+    }));
+
+    if (!updatedTimeline.some((n) => n.stepNumber === 2)) {
+      updatedTimeline.push({
+        status: 'reviewing',
+        stepNumber: 2,
+        title: '2. 方案审核通过 · 商务与运营已指派',
+        description: `审核通过，专属商务【${assignedBusiness}】与运营【${assignedOperations}】已就绪${note ? ` (${note})` : ''}`,
+        time: nowStr,
+        done: true,
+        active: true,
+      });
+    } else {
+      const idx = updatedTimeline.findIndex((n) => n.stepNumber === 2);
+      updatedTimeline[idx] = {
+        ...updatedTimeline[idx],
+        title: '2. 方案审核通过 · 商务与运营已指派',
+        description: `审核通过，专属商务【${assignedBusiness}】与运营【${assignedOperations}】已就绪${note ? ` (${note})` : ''}`,
+        time: nowStr,
+        done: true,
+        active: true,
+      };
+    }
+
+    const updatedPlan: SavedPlanRecord = {
+      ...plan,
+      orderStatus: 'reviewing',
+      orderStatusLabel: '审核通过 (商务跟进中)',
+      consultantName: assignedBusiness,
+      logisticsInfo: {
+        orderNumber: plan.logisticsInfo?.orderNumber || `ORD${Date.now().toString().slice(-8)}`,
+        carrier: plan.logisticsInfo?.carrier || '顺丰速运',
+        trackingNumber: plan.logisticsInfo?.trackingNumber || '待出库分配',
+        trackingNumbers: plan.logisticsInfo?.trackingNumbers || [],
+        packages: plan.logisticsInfo?.packages || [],
+        totalProgress: 40,
+        totalProgressLabel: '方案审核通过 · 商务对接中',
+        shippingDate: plan.logisticsInfo?.shippingDate || '待排期',
+        estimatedArrivalDate: plan.logisticsInfo?.estimatedArrivalDate || '待确认',
+        recipientName: plan.customerName || '客户',
+        recipientPhone: plan.customerPhone || '17696180841',
+        shippingAddress: plan.customerAddress || '北京市朝阳区客户指定收货地址',
+        businessManagerName: assignedBusiness,
+        businessManagerPhone: '186-0010-8899',
+        businessManagerWechat: 'zhijia_service',
+        notes: note || '方案初审通过，已指派专属商务进行现场量房与工程交底',
+        currentStepIndex: 1,
+        timeline: updatedTimeline,
+      },
+    };
+
+    this.saveSingleSavedPlan(updatedPlan);
+
+    // Sync Customer
+    try {
+      const customers = this.getCustomers();
+      const updatedCusts = customers.map((c) => {
+        if (c.phone === plan.customerPhone || c.name === plan.customerName) {
+          return {
+            ...c,
+            assignedBusiness,
+            assignedOperations,
+            assignedTo: assignedBusiness,
+          };
+        }
+        return c;
+      });
+      this.saveCustomers(updatedCusts);
+    } catch {
+      // ignore
+    }
+  }
+
+  static rejectPlanReport(planId: string, note: string): void {
+    const plans = this.getSavedPlans();
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    const updatedPlan: SavedPlanRecord = {
+      ...plan,
+      orderStatus: 'contact_sales',
+      orderStatusLabel: '待对接 (方案已驳回)',
+      logisticsInfo: {
+        ...(plan.logisticsInfo || {
+          orderNumber: `ORD${Date.now().toString().slice(-8)}`,
+          recipientName: plan.customerName || '客户',
+          recipientPhone: plan.customerPhone || '17696180841',
+          shippingAddress: '待修改',
+          businessManagerName: '审核中心',
+          currentStepIndex: 0,
+          timeline: [],
+        }),
+        notes: `审核驳回原因：${note}`,
+      },
+    };
+    this.saveSingleSavedPlan(updatedPlan);
   }
 
   static deleteSavedPlan(planId: string): void {
@@ -1432,6 +2051,8 @@ export class AdminStorageManager {
     localStorage.removeItem(STORAGE_KEYS.PLAN_TEMPLATES);
     localStorage.removeItem(STORAGE_KEYS.CUSTOM_QUOTATIONS);
     localStorage.removeItem(STORAGE_KEYS.FLOOR_POINT_DESIGNS);
+    localStorage.removeItem(STORAGE_KEYS.COUPONS);
+    localStorage.removeItem(STORAGE_KEYS.BALANCE_AUDIT_REQUESTS);
   }
 }
 

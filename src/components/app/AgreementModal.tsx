@@ -19,37 +19,37 @@ export const AgreementModal: React.FC<AgreementModalProps> = ({
   return (
     <div
       id="agreement-modal-backdrop"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn"
       onClick={onClose}
     >
       <div
         id="agreement-modal-content"
-        className="w-[calc(100vw-32px)] max-w-lg bg-white rounded-[20px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-scaleUp border border-slate-200"
+        className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-2">
+        <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-2 min-w-0 pr-2">
             {isTerms ? (
-              <FileText className="w-5 h-5 text-amber-400" />
+              <FileText className="w-4 h-4 text-amber-400 shrink-0" />
             ) : (
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
             )}
-            <h3 className="font-bold text-sm">
+            <h3 className="font-extrabold text-sm truncate">
               {isTerms ? '智家全屋定制《用户服务协议》' : '智家全屋定制《隐私保护政策》'}
             </h3>
           </div>
           <button
             id="btn-close-agreement"
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-5 overflow-y-auto text-xs text-slate-600 leading-relaxed space-y-4">
+        <div className="p-4 overflow-y-auto text-xs text-slate-600 leading-relaxed space-y-3.5 flex-1">
           {isTerms ? (
             <>
               <p className="font-bold text-slate-800">
@@ -102,12 +102,12 @@ export const AgreementModal: React.FC<AgreementModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
+        <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
           >
-            我已了解
+            我已阅读并了解
           </button>
         </div>
       </div>

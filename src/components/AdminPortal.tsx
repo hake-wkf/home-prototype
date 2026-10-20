@@ -41,6 +41,8 @@ import {
   Sparkles,
   Share2,
   FileStack,
+  Wallet,
+  Ticket,
 } from 'lucide-react';
 import {
   LayoutPreset,
@@ -55,13 +57,14 @@ import {
   PlanTemplate,
 } from '../types';
 import { AdminStorageManager } from '../utils/adminStorage';
-import { CustomerPool } from './crm/CustomerPool';
 import { MyCustomers } from './crm/MyCustomers';
 import { CustomerDetailView } from './crm/CustomerDetailView';
 import { AdminQuickQuoteWizard } from './admin/AdminQuickQuoteWizard';
 import { ManualProductQuotation } from './admin/ManualProductQuotation';
 import { FloorPlanPointDesigner } from './admin/FloorPlanPointDesigner';
 import { CustomerAuditCenter } from './crm/CustomerAuditCenter';
+import { FinanceAuditCenter } from './crm/FinanceAuditCenter';
+import { CouponManagement } from './crm/CouponManagement';
 import { AdminCustomerTemplates } from './admin/AdminCustomerTemplates';
 import { AdminCustomerPlanRecords } from './admin/AdminCustomerPlanRecords';
 
@@ -72,9 +75,10 @@ interface AdminPortalProps {
 export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
   // Active Tab
   const [activeTab, setActiveTab] = useState<
-    | 'customerPool'
     | 'myCustomers'
     | 'customerAudit'
+    | 'financeAudit'
+    | 'couponManagement'
     | 'customerDetail'
     | 'quickQuote'
     | 'manualQuote'
@@ -84,7 +88,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     | 'layoutPresets'
     | 'roomSmartSchemes'
     | 'equipmentCatalog'
-  >('customerPool');
+  >('myCustomers');
 
   // Nav Accordion Toggles
   const [customerNavOpen, setCustomerNavOpen] = useState(true);
@@ -133,7 +137,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
       customerId: newCust.id,
       time: `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 8)}`,
       method: '创建客户',
-      matter: `卫科帆创建客户【${newCust.name}】${newCust.isPool ? '入客户池' : ''}`,
+      matter: `卫科帆创建客户【${newCust.name}】`,
       result: '-',
       type: '日志',
       operator: '卫科帆',
@@ -161,7 +165,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     AdminStorageManager.saveCustomers(updated);
     if (selectedCustomer?.id === customerId) {
       setSelectedCustomer(updated[0] || null);
-      setActiveTab('customerPool');
+      setActiveTab('myCustomers');
     }
     showToast('客户已删除');
   };
@@ -558,7 +562,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              客户池 & 我的客户 CRM 全流程跟进、户型智能方案设计与设备库
+              我的客户 CRM 全流程跟进、客户审核、财务审核、优惠券管理、智能方案与设备库
             </p>
           </div>
         </div>
@@ -597,11 +601,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
           <div className="space-y-3">
             {/* 工作台 (Top Entry) */}
             <button
-              onClick={() => setActiveTab('customerPool')}
+              onClick={() => setActiveTab('myCustomers')}
               className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 cursor-pointer"
             >
               <LayoutDashboard className="w-4 h-4 text-slate-400" />
-              <span>工作台</span>
+              <span>工作台 (我的客户)</span>
             </button>
 
             {/* 1. 客户管理 (Customer Management Menu) */}
@@ -619,7 +623,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
 
               {customerNavOpen && (
                 <div className="pl-3 space-y-0.5 pt-0.5 border-l border-slate-100 ml-4">
-                  {/* 客户审核中心 */}
+                  {/* 我的客户 (FEATURE 8 & 9) */}
+                  <button
+                    onClick={() => setActiveTab('myCustomers')}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                      activeTab === 'myCustomers'
+                        ? 'bg-blue-50 text-blue-700 font-bold border-l-2 border-blue-600'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                    }`}
+                  >
+                    <span>我的客户</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                      {customers.length}
+                    </span>
+                  </button>
+
+                  {/* 客户审核中心 (FEATURE 5 & 6) */}
                   <button
                     onClick={() => setActiveTab('customerAudit')}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
@@ -639,43 +658,43 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
                     )}
                   </button>
 
-                  {/* 客户池 */}
+                  {/* 财务审核中心 (FEATURE 9: 余额变更审核) */}
                   <button
-                    onClick={() => setActiveTab('customerPool')}
+                    onClick={() => setActiveTab('financeAudit')}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
-                      activeTab === 'customerPool'
-                        ? 'bg-blue-50 text-blue-700 font-bold border-l-2 border-blue-600'
+                      activeTab === 'financeAudit'
+                        ? 'bg-amber-50 text-amber-800 font-bold border-l-2 border-amber-600'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
                     }`}
                   >
-                    <span>客户池</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                      {customers.filter((c) => c.isPool).length}
-                    </span>
+                    <div className="flex items-center space-x-1.5">
+                      <Wallet className="w-3.5 h-3.5 text-amber-600" />
+                      <span>财务审核中心</span>
+                    </div>
+                    {AdminStorageManager.getBalanceAuditRequests().filter((r) => r.status === 'pending_finance').length > 0 && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono">
+                        {AdminStorageManager.getBalanceAuditRequests().filter((r) => r.status === 'pending_finance').length}
+                      </span>
+                    )}
                   </button>
 
-                  {/* 我的客户 */}
+                  {/* 优惠券管理 (FEATURE 10: 创建优惠券与发放) */}
                   <button
-                    onClick={() => setActiveTab('myCustomers')}
+                    onClick={() => setActiveTab('couponManagement')}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
-                      activeTab === 'myCustomers'
-                        ? 'bg-blue-50 text-blue-700 font-bold border-l-2 border-blue-600'
+                      activeTab === 'couponManagement'
+                        ? 'bg-rose-50 text-rose-700 font-bold border-l-2 border-rose-600'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
                     }`}
                   >
-                    <span>我的客户</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                      {customers.filter((c) => !c.isPool).length}
+                    <div className="flex items-center space-x-1.5">
+                      <Ticket className="w-3.5 h-3.5 text-rose-500" />
+                      <span>优惠券管理</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200">
+                      {AdminStorageManager.getCoupons().length}
                     </span>
                   </button>
-
-                  {/* Other CRM placeholders */}
-                  <div className="px-2.5 py-1 text-[11px] text-slate-400 hover:text-slate-600 cursor-pointer">客户字段</div>
-                  <div className="px-2.5 py-1 text-[11px] text-slate-400 hover:text-slate-600 cursor-pointer">搜索字段</div>
-                  <div className="px-2.5 py-1 text-[11px] text-slate-400 hover:text-slate-600 cursor-pointer">渠道客户</div>
-                  <div className="px-2.5 py-1 text-[11px] text-slate-400 hover:text-slate-600 cursor-pointer">零售客户</div>
-                  <div className="px-2.5 py-1 text-[11px] text-slate-400 hover:text-slate-600 cursor-pointer">门店预约</div>
-                  <div className="px-2.5 py-1 text-[11px] text-slate-400 hover:text-slate-600 cursor-pointer">设置</div>
                 </div>
               )}
             </div>
@@ -860,9 +879,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
             <AdminQuickQuoteWizard
               onCompleteQuotation={(record) => {
                 showToast(`报价方案【${record.title}】已成功生成！`);
-                setActiveTab('customerPool');
+                setActiveTab('myCustomers');
               }}
-              onCancel={() => setActiveTab('customerPool')}
+              onCancel={() => setActiveTab('myCustomers')}
             />
           )}
 
@@ -875,14 +894,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
               onOpenPointDesigner={(planId) => {
                 setActiveTab('pointConfig');
               }}
-              onExit={() => setActiveTab('customerPool')}
+              onExit={() => setActiveTab('myCustomers')}
             />
           )}
 
           {/* TAB: 点位图与灯光CAD (选择方案拖动产品到户型图 - 参考图二) */}
           {activeTab === 'pointConfig' && (
             <FloorPlanPointDesigner
-              onExit={() => setActiveTab('customerPool')}
+              onExit={() => setActiveTab('myCustomers')}
             />
           )}
 
@@ -900,7 +919,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
                   setSelectedCustomer(found);
                   setActiveTab('customerDetail');
                 } else {
-                  setActiveTab('customerPool');
+                  setActiveTab('myCustomers');
                 }
               }}
             />
@@ -916,7 +935,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
             />
           )}
 
-          {/* TAB: 客户审核中心 */}
+          {/* TAB: 客户审核中心 (FEATURE 5 & 6) */}
           {activeTab === 'customerAudit' && (
             <CustomerAuditCenter
               customers={customers}
@@ -926,19 +945,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
             />
           )}
 
-          {/* TAB: 客户池 (Image 1) */}
-          {activeTab === 'customerPool' && (
-            <CustomerPool
-              customers={customers}
-              onSelectCustomer={handleSelectCustomer}
-              onAddCustomer={handleAddCustomer}
-              onBatchAssign={handleBatchAssign}
-              onBatchChangeStatus={handleBatchChangeStatus}
-              onBatchDelete={handleBatchDelete}
+          {/* TAB: 财务审核中心 (FEATURE 9: 更改余额流转至财务审核) */}
+          {activeTab === 'financeAudit' && (
+            <FinanceAuditCenter
+              onShowToast={showToast}
+              onRefreshData={() => {
+                setCustomers(AdminStorageManager.getCustomers());
+              }}
             />
           )}
 
-          {/* TAB: 我的客户 (Image 4) */}
+          {/* TAB: 优惠券管理 (FEATURE 10: 创建优惠券与发放) */}
+          {activeTab === 'couponManagement' && (
+            <CouponManagement
+              customers={customers}
+              onShowToast={showToast}
+              onRefreshData={() => {
+                setCustomers(AdminStorageManager.getCustomers());
+              }}
+            />
+          )}
+
+          {/* TAB: 我的客户 (FEATURE 8 & 9) */}
           {activeTab === 'myCustomers' && (
             <MyCustomers
               customers={customers}
@@ -948,15 +976,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
               onBatchChangeStatus={handleBatchChangeStatus}
               onBatchDelete={handleBatchDelete}
               onToggleShare={handleToggleShare}
+              onShowToast={showToast}
+              onRefreshData={() => {
+                setCustomers(AdminStorageManager.getCustomers());
+              }}
             />
           )}
 
-          {/* TAB: 客户详情 & 跟进记录 (Image 2 & Image 6) */}
+          {/* TAB: 客户详情 & 跟进记录 */}
           {activeTab === 'customerDetail' && selectedCustomer && (
             <CustomerDetailView
               customer={selectedCustomer}
               followUps={followUps}
-              onBack={() => setActiveTab(selectedCustomer.isPool ? 'customerPool' : 'myCustomers')}
+              onBack={() => setActiveTab('myCustomers')}
               onUpdateCustomer={handleUpdateCustomer}
               onDeleteCustomer={handleDeleteCustomer}
               onAddFollowUp={handleAddFollowUpRecord}

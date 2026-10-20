@@ -355,41 +355,41 @@ export const PlanTemplatesView: React.FC<PlanTemplatesViewProps> = ({
         )}
       </div>
 
-      {/* Inspect Template Detail Modal */}
+      {/* Inspect Template Detail Modal - 规格统一 */}
       {inspectingTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
+          <div className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
               <div>
-                <span className="text-[10px] font-bold text-amber-400 px-2 py-0.5 rounded-full bg-slate-800">
+                <span className="text-[10px] font-bold text-amber-400 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
                   {inspectingTemplate.categoryLabel}
                 </span>
-                <h3 className="font-extrabold text-sm mt-1">{inspectingTemplate.title}</h3>
+                <h3 className="font-extrabold text-sm mt-1 text-white">{inspectingTemplate.title}</h3>
               </div>
               <button
                 onClick={() => setInspectingTemplate(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto space-y-3 text-xs flex-1">
+            <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
               <div className="grid grid-cols-3 gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl text-center">
                 <div>
-                  <span className="text-[9px] text-slate-400 block">参考估算</span>
+                  <span className="text-[10px] text-slate-400 block">参考估算</span>
                   <span className="text-xs font-black text-slate-900 font-mono">
                     ¥{inspectingTemplate.estimatedCostTenThousand}万
                   </span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-slate-400 block">空间数量</span>
+                  <span className="text-[10px] text-slate-400 block">空间数量</span>
                   <span className="text-xs font-bold text-slate-900 font-mono">
                     {inspectingTemplate.roomsCount || inspectingTemplate.rooms.length} 间
                   </span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-slate-400 block">预估设备</span>
+                  <span className="text-[10px] text-slate-400 block">预估设备</span>
                   <span className="text-xs font-bold text-slate-900 font-mono">
                     {inspectingTemplate.deviceCount || 24} 件
                   </span>
@@ -397,7 +397,7 @@ export const PlanTemplatesView: React.FC<PlanTemplatesViewProps> = ({
               </div>
 
               {inspectingTemplate.description && (
-                <p className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 leading-relaxed">
+                <p className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200 leading-relaxed">
                   {inspectingTemplate.description}
                 </p>
               )}
@@ -409,7 +409,7 @@ export const PlanTemplatesView: React.FC<PlanTemplatesViewProps> = ({
                   {inspectingTemplate.rooms.map((r, idx) => (
                     <div
                       key={r.id || idx}
-                      className="p-2 bg-white border border-slate-200 rounded-xl text-[11px] space-y-0.5"
+                      className="p-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] space-y-0.5"
                     >
                       <div className="flex items-center justify-between font-bold text-slate-900">
                         <span>{r.name}</span>
@@ -442,7 +442,7 @@ export const PlanTemplatesView: React.FC<PlanTemplatesViewProps> = ({
                   onApplyTemplate(inspectingTemplate);
                   setInspectingTemplate(null);
                 }}
-                className="flex-2 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center space-x-1 cursor-pointer"
+                className="flex-2 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-xs shadow-xs transition-all flex items-center justify-center space-x-1 cursor-pointer"
               >
                 <Zap className="w-3.5 h-3.5" />
                 <span>套用此模板</span>
@@ -452,11 +452,11 @@ export const PlanTemplatesView: React.FC<PlanTemplatesViewProps> = ({
         </div>
       )}
 
-      {/* Create / Edit Template Modal */}
+      {/* Create / Edit Template Modal - 规格统一 */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
+          <div className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-2">
                 {editingTemplateId ? (
                   <Edit3 className="w-4 h-4 text-amber-400" />
@@ -469,13 +469,13 @@ export const PlanTemplatesView: React.FC<PlanTemplatesViewProps> = ({
               </div>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 space-y-3 text-xs overflow-y-auto flex-1">
+            <div className="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
               <div>
                 <label className="text-[11px] font-bold text-slate-700 block mb-1">
                   模板名称
@@ -546,7 +546,7 @@ export const PlanTemplatesView: React.FC<PlanTemplatesViewProps> = ({
               </button>
               <button
                 onClick={handleSaveModalForm}
-                className="flex-2 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-xs shadow-md cursor-pointer flex items-center justify-center space-x-1"
+                className="flex-2 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-xs shadow-xs cursor-pointer flex items-center justify-center space-x-1"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>{editingTemplateId ? '保存修改' : '确认创建'}</span>

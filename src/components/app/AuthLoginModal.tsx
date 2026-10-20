@@ -200,12 +200,12 @@ export const AuthLoginModal: React.FC<AuthLoginModalProps> = ({
     <>
       <div
         id="auth-login-modal-backdrop"
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn select-none"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn"
         onClick={onClose}
       >
         <div
           id="auth-login-modal-card"
-          className="w-[calc(100vw-32px)] max-w-sm sm:max-w-md bg-white rounded-[20px] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] relative animate-scaleUp border border-slate-100"
+          className="w-full max-w-[390px] sm:max-w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] relative animate-scaleUp"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Compact Brand Area (高度约 100px) */}
