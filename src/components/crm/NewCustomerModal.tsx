@@ -15,6 +15,21 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   onSave,
   defaultIsPool = true,
 }) => {
+  const contractRules = (() => {
+    try {
+      const stored = localStorage.getItem('zhijia_admin_business_rules_v1');
+      if (stored) {
+        return JSON.parse(stored) as {
+          defaultContractMonths?: number;
+          renewalReminderDays?: number;
+        };
+      }
+    } catch {
+      // Use the default one-year contract rule.
+    }
+    return { defaultContractMonths: 12, renewalReminderDays: 30 };
+  })();
+  const contractMonths = Math.max(1, contractRules.defaultContractMonths || 12);
   const [name, setName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [phone, setPhone] = useState('');
@@ -25,6 +40,7 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   const [designer, setDesigner] = useState('');
   const [salesperson, setSalesperson] = useState('卫科帆');
   const [firstContactDate, setFirstContactDate] = useState('2026-08-18');
+  const [contractStartDate, setContractStartDate] = useState('2026-10-20');
   const [houseArea, setHouseArea] = useState('');
   const [houseLayout, setHouseLayout] = useState('两室两厅');
   const [channel, setChannel] = useState('暂无');
@@ -51,6 +67,16 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
       createdAt: '08-18 16:28',
       updatedAt: '08-18 16:28',
       isPool: defaultIsPool,
+      accountEnabled: true,
+      cooperationDeposit: 0,
+      purchaseBalance: 0,
+      contractStartDate,
+      contractEndDate: (() => {
+        const end = new Date(`${contractStartDate}T00:00:00`);
+        end.setMonth(end.getMonth() + contractMonths);
+        return end.toISOString().slice(0, 10);
+      })(),
+      renewalReminderDays: contractRules.renewalReminderDays || 30,
       region,
       detailAddress: detailAddress.trim() || '北京顺义区大槐树镇',
       source,
@@ -241,6 +267,19 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                   onChange={(e) => setFirstContactDate(e.target.value)}
                   className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-medium mb-1">合同开始时间:</label>
+                <input
+                  type="date"
+                  value={contractStartDate}
+                  onChange={(e) => setContractStartDate(e.target.value)}
+                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
+                />
+                <p className="mt-1 text-[10px] text-slate-400">
+                  系统自动按 {contractMonths} 个月计算合同结束时间
+                </p>
               </div>
 
               <div>

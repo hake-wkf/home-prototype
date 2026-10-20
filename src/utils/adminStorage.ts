@@ -16,6 +16,7 @@ import {
   PlanChatMessage,
   CustomerCoupon,
   BalanceAuditRequest,
+  BalanceTransactionRecord,
   UserDefaultContact,
 } from '../types';
 import { LAYOUT_PRESETS, DEFAULT_ROOM_TEMPLATES, DEVICE_SERIES_LIST } from '../data/presetData';
@@ -38,6 +39,7 @@ const STORAGE_KEYS = {
   FLOOR_POINT_DESIGNS: 'zhijia_admin_floor_point_designs_v1',
   COUPONS: 'zhijia_admin_coupons_v1',
   BALANCE_AUDIT_REQUESTS: 'zhijia_admin_balance_audit_requests_v1',
+  BALANCE_TRANSACTIONS: 'zhijia_admin_balance_transactions_v1',
   DEFAULT_CONTACTS: 'zhijia_app_default_contacts_v1',
 };
 
@@ -171,6 +173,12 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   isLoggedIn: true,
   createdAt: '2026-08-18 10:00',
   balance: 26800,
+  cooperationDeposit: 20000,
+  purchaseBalance: 26800,
+  accountEnabled: true,
+  contractStartDate: '2026-01-01',
+  contractEndDate: '2026-12-31',
+  renewalReminderDays: 30,
   coupons: INITIAL_COUPONS,
   defaultContacts: INITIAL_DEFAULT_CONTACTS,
 };
@@ -1405,6 +1413,28 @@ export class AdminStorageManager {
           ...c,
           isPool: false, // 客户池功能已去掉，全部归属为我的客户
           balance: typeof c.balance === 'number' ? c.balance : (idx === 0 ? 15000 : idx === 1 ? 26800 : idx === 2 ? 0 : 38000),
+          cooperationDeposit:
+            typeof c.cooperationDeposit === 'number'
+              ? c.cooperationDeposit
+              : idx % 2 === 0
+                ? 20000
+                : 10000,
+          purchaseBalance:
+            typeof c.purchaseBalance === 'number'
+              ? c.purchaseBalance
+              : typeof c.balance === 'number'
+                ? c.balance
+                : idx === 0
+                  ? 15000
+                  : idx === 1
+                    ? 26800
+                    : idx === 2
+                      ? 0
+                      : 38000,
+          accountEnabled: c.accountEnabled !== false,
+          contractStartDate: c.contractStartDate || '2026-01-01',
+          contractEndDate: c.contractEndDate || '2026-12-31',
+          renewalReminderDays: c.renewalReminderDays ?? 30,
           coupons: Array.isArray(c.coupons) ? c.coupons : INITIAL_COUPONS,
           assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属商务经理)',
           assignedOperations: c.assignedOperations || '赵敏 (交付运营专员)',
@@ -1413,14 +1443,33 @@ export class AdminStorageManager {
     } catch (e) {
       console.error('Failed to parse customers', e);
     }
-    return INITIAL_CUSTOMERS.map((c, idx) => ({
-      ...c,
-      isPool: false,
-      balance: typeof c.balance === 'number' ? c.balance : (idx === 0 ? 15000 : idx === 1 ? 26800 : idx === 2 ? 0 : 38000),
-      coupons: Array.isArray(c.coupons) ? c.coupons : INITIAL_COUPONS,
-      assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属商务经理)',
-      assignedOperations: c.assignedOperations || '赵敏 (交付运营专员)',
-    }));
+    return INITIAL_CUSTOMERS.map((c, idx) => {
+      const fallbackBalance = idx === 0 ? 15000 : idx === 1 ? 26800 : idx === 2 ? 0 : 38000;
+      return {
+        ...c,
+        isPool: false,
+        balance: typeof c.balance === 'number' ? c.balance : fallbackBalance,
+        cooperationDeposit:
+          typeof c.cooperationDeposit === 'number'
+            ? c.cooperationDeposit
+            : idx % 2 === 0
+              ? 20000
+              : 10000,
+        purchaseBalance:
+          typeof c.purchaseBalance === 'number'
+            ? c.purchaseBalance
+            : typeof c.balance === 'number'
+              ? c.balance
+              : fallbackBalance,
+        accountEnabled: c.accountEnabled !== false,
+        contractStartDate: c.contractStartDate || '2026-01-01',
+        contractEndDate: c.contractEndDate || '2026-12-31',
+        renewalReminderDays: c.renewalReminderDays ?? 30,
+        coupons: Array.isArray(c.coupons) ? c.coupons : INITIAL_COUPONS,
+        assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属商务经理)',
+        assignedOperations: c.assignedOperations || '赵敏 (交付运营专员)',
+      };
+    });
   }
 
   static saveCustomers(customers: Customer[]): void {
@@ -1586,6 +1635,118 @@ export class AdminStorageManager {
     }
   }
 
+  static getBalanceTransactions(): BalanceTransactionRecord[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.BALANCE_TRANSACTIONS);
+      if (data) return JSON.parse(data) as BalanceTransactionRecord[];
+    } catch (e) {
+      console.error('Failed to parse balance transactions', e);
+    }
+    return [];
+  }
+
+  static saveBalanceTransactions(transactions: BalanceTransactionRecord[]): void {
+    localStorage.setItem(STORAGE_KEYS.BALANCE_TRANSACTIONS, JSON.stringify(transactions));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('balance_transactions_updated', { detail: transactions }),
+      );
+    }
+  }
+
+  static deductPurchaseBalance(
+    customer: Customer,
+    amount: number,
+    plan: Pick<SavedPlanRecord, 'id' | 'title'>,
+  ): { success: boolean; remainingBalance: number; deductedAmount: number } {
+    const customers = this.getCustomers();
+    const target =
+      customers.find((item) => item.id === customer.id) ||
+      customers.find((item) => item.phone === customer.phone);
+    if (!target) {
+      return {
+        success: false,
+        remainingBalance: customer.purchaseBalance ?? customer.balance ?? 0,
+        deductedAmount: 0,
+      };
+    }
+
+    const currentBalance = target.purchaseBalance ?? target.balance ?? 0;
+    const deductedAmount = Math.max(0, Math.min(currentBalance, amount));
+    const remainingBalance = Math.max(0, currentBalance - deductedAmount);
+    const now = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
+
+    this.saveCustomers(
+      customers.map((item) =>
+        item.id === target.id
+          ? {
+              ...item,
+              purchaseBalance: remainingBalance,
+              balance: remainingBalance,
+              updatedAt: now,
+            }
+          : item,
+      ),
+    );
+
+    try {
+      const profile = this.getUserProfile();
+      if (profile.id === target.id || profile.phone === target.phone) {
+        this.saveUserProfile({
+          ...profile,
+          purchaseBalance: remainingBalance,
+          balance: remainingBalance,
+        });
+      }
+    } catch {
+      // Ignore profile sync errors in prototype storage.
+    }
+
+    if (deductedAmount > 0) {
+      const transaction: BalanceTransactionRecord = {
+        id: `tx_order_${Date.now()}`,
+        customerId: target.id,
+        customerPhone: target.phone,
+        title: `方案下单扣款 · ${plan.title}`,
+        note: '从进货款账户扣减，合作保证金未参与本次支付',
+        amount: deductedAmount,
+        type: 'expense',
+        accountType: 'purchase',
+        time: now,
+        planId: plan.id,
+      };
+      this.saveBalanceTransactions([transaction, ...this.getBalanceTransactions()]);
+      this.saveFollowUps([
+        {
+          id: `fu_order_${Date.now()}`,
+          customerId: target.id,
+          time: now,
+          method: '方案下单扣款',
+          matter: `方案【${plan.title}】提交商务对接，系统从进货款扣减 ¥${deductedAmount.toLocaleString()}`,
+          result: `扣款后进货款余额 ¥${remainingBalance.toLocaleString()}，合作保证金未参与支付`,
+          type: '日志',
+          operator: '系统自动记账',
+        },
+        ...this.getFollowUps(),
+      ]);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('customer_balance_updated', {
+          detail: {
+            customerId: target.id,
+            customerPhone: target.phone,
+            newBalance: remainingBalance,
+            accountType: 'purchase',
+          },
+        }),
+      );
+    }
+
+    return { success: true, remainingBalance, deductedAmount };
+  }
+
   static submitBalanceAdjustment(req: BalanceAuditRequest): void {
     const requests = this.getBalanceAuditRequests();
     const updated = [req, ...requests];
@@ -1593,12 +1754,13 @@ export class AdminStorageManager {
 
     // Add log in follow-up records
     const fuList = this.getFollowUps();
+    const accountLabel = req.accountType === 'deposit' ? '合作保证金' : '进货款';
     const newFu: FollowUpRecord = {
       id: `fu_bal_${Date.now()}`,
       customerId: req.customerId,
       time: req.submittedAt,
       method: '提交余额更改申请',
-      matter: `提交客户【${req.customerName}】余额调整申请：原余额 ¥${req.originalBalance} 调整为 ¥${req.targetBalance} (变动 ${req.changeAmount >= 0 ? '+' : ''}${req.changeAmount}元)`,
+      matter: `提交客户【${req.customerName}】${accountLabel}调整申请：原金额 ¥${req.originalBalance} 调整为 ¥${req.targetBalance} (变动 ${req.changeAmount >= 0 ? '+' : ''}${req.changeAmount}元)`,
       result: `申请已流转至财务部门待审核，附凭证截图及备注：${req.remark}`,
       type: '日志',
       operator: req.applicant,
@@ -1610,6 +1772,7 @@ export class AdminStorageManager {
     const requests = this.getBalanceAuditRequests();
     const req = requests.find((r) => r.id === requestId);
     if (!req) return;
+    const accountLabel = req.accountType === 'deposit' ? '合作保证金' : '进货款';
 
     const nowStr = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
     const updatedRequests = requests.map((r) => {
@@ -1632,7 +1795,9 @@ export class AdminStorageManager {
       if (c.id === req.customerId || c.phone === req.customerPhone) {
         return {
           ...c,
-          balance: req.targetBalance,
+          ...(req.accountType === 'deposit'
+            ? { cooperationDeposit: req.targetBalance }
+            : { purchaseBalance: req.targetBalance, balance: req.targetBalance }),
           updatedAt: nowStr,
         };
       }
@@ -1646,11 +1811,30 @@ export class AdminStorageManager {
       if (userProfile && (userProfile.id === req.customerId || userProfile.phone === req.customerPhone)) {
         this.saveUserProfile({
           ...userProfile,
-          balance: req.targetBalance,
+          ...(req.accountType === 'deposit'
+            ? { cooperationDeposit: req.targetBalance }
+            : { purchaseBalance: req.targetBalance, balance: req.targetBalance }),
         });
       }
     } catch {
       // ignore
+    }
+
+    if (req.changeAmount !== 0) {
+      this.saveBalanceTransactions([
+        {
+          id: `tx_balance_${Date.now()}`,
+          customerId: req.customerId,
+          customerPhone: req.customerPhone,
+          title: `${accountLabel}${req.changeAmount > 0 ? '入账' : '扣减'}`,
+          note: note || req.remark,
+          amount: Math.abs(req.changeAmount),
+          type: req.changeAmount > 0 ? 'income' : 'expense',
+          accountType: req.accountType === 'deposit' ? 'deposit' : 'purchase',
+          time: nowStr,
+        },
+        ...this.getBalanceTransactions(),
+      ]);
     }
 
     // Add follow-up record
@@ -1660,7 +1844,7 @@ export class AdminStorageManager {
       customerId: req.customerId,
       time: nowStr,
       method: '财务审核通过',
-      matter: `财务主管【${reviewerName}】审核通过余额调整，实际生效余额: ¥${req.targetBalance}`,
+      matter: `财务主管【${reviewerName}】审核通过${accountLabel}调整，实际生效金额: ¥${req.targetBalance}`,
       result: note || '已核验转账单真实到账，余额正式入账',
       type: '日志',
       operator: reviewerName,
@@ -1668,7 +1852,16 @@ export class AdminStorageManager {
     this.saveFollowUps([newFu, ...fuList]);
 
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('customer_balance_updated', { detail: { customerId: req.customerId, newBalance: req.targetBalance } }));
+      window.dispatchEvent(
+        new CustomEvent('customer_balance_updated', {
+          detail: {
+            customerId: req.customerId,
+            customerPhone: req.customerPhone,
+            newBalance: req.targetBalance,
+            accountType: req.accountType === 'deposit' ? 'deposit' : 'purchase',
+          },
+        }),
+      );
     }
   }
 
@@ -1730,6 +1923,17 @@ export class AdminStorageManager {
         return {
           ...parsed,
           balance: typeof parsed.balance === 'number' ? parsed.balance : 26800,
+          cooperationDeposit: typeof parsed.cooperationDeposit === 'number' ? parsed.cooperationDeposit : 20000,
+          purchaseBalance:
+            typeof parsed.purchaseBalance === 'number'
+              ? parsed.purchaseBalance
+              : typeof parsed.balance === 'number'
+                ? parsed.balance
+                : 26800,
+          accountEnabled: parsed.accountEnabled !== false,
+          contractStartDate: parsed.contractStartDate || '2026-01-01',
+          contractEndDate: parsed.contractEndDate || '2026-12-31',
+          renewalReminderDays: parsed.renewalReminderDays ?? 30,
           coupons: Array.isArray(parsed.coupons) ? parsed.coupons : INITIAL_COUPONS,
           defaultContacts: Array.isArray(parsed.defaultContacts) ? parsed.defaultContacts : this.getDefaultContacts(),
         };

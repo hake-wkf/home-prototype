@@ -83,6 +83,8 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
   const availableSystemCoupons = AdminStorageManager.getCoupons();
 
   const custBalance = typeof customer.balance === 'number' ? customer.balance : 26800;
+  const custDeposit = customer.cooperationDeposit || 0;
+  const custPurchaseBalance = customer.purchaseBalance ?? custBalance;
   const custCoupons = customer.coupons || [];
 
   const handleAssignConfirm = (business: string, operations: string, note: string) => {
@@ -206,7 +208,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
             className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg font-bold flex items-center space-x-1 cursor-pointer"
           >
             <Wallet className="w-3.5 h-3.5 text-amber-700" />
-            <span>更改余额</span>
+            <span>资金账户设置</span>
           </button>
 
           <button
@@ -299,7 +301,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
               }`}
             >
               <Wallet className="w-3.5 h-3.5" />
-              <span>客户已有余额 (¥{custBalance})</span>
+              <span>资金账户 (进货款 ¥{custPurchaseBalance})</span>
             </button>
 
             <button
@@ -343,7 +345,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
               className="flex items-center space-x-1 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold cursor-pointer"
             >
               <Wallet className="w-3.5 h-3.5" />
-              <span>申请更改余额</span>
+              <span>财务设置资金账户</span>
             </button>
           )}
 
@@ -465,26 +467,31 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
         {/* Tab Content 2: 客户已有余额与财务审核流水 */}
         {activeTab === 'balance' && (
           <div className="p-5 space-y-4">
-            {/* Balance Card */}
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-5 border border-slate-800 flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-xs text-slate-400 block font-medium">客户当前账户已有余额</span>
-                <div className="text-2xl font-black font-mono text-white">
-                  ¥{custBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+            {/* Balance Cards */}
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <span className="text-[10px] font-bold text-amber-700">合作保证金</span>
+                <div className="mt-1 font-mono text-2xl font-black text-slate-900">
+                  ¥{custDeposit.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  支持用于全屋智能方案签约款抵扣或设备货款冲抵
-                </p>
+                <p className="mt-2 text-[10px] text-amber-700">不可参与下单抵扣，仅作为合作履约保证金。</p>
               </div>
-
-              <button
-                onClick={() => setIsChangeBalanceOpen(true)}
-                className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold rounded-xl text-xs shadow-md transition-colors cursor-pointer flex items-center space-x-1.5"
-              >
-                <Wallet className="w-4 h-4" />
-                <span>申请更改余额</span>
-              </button>
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                <span className="text-[10px] font-bold text-blue-700">进货款余额</span>
+                <div className="mt-1 font-mono text-2xl font-black text-slate-900">
+                  ¥{custPurchaseBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                </div>
+                <p className="mt-2 text-[10px] text-blue-700">可用于订单货款抵扣，下单时优先使用此账户。</p>
+              </div>
             </div>
+
+            <button
+              onClick={() => setIsChangeBalanceOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+            >
+              <Wallet className="h-4 w-4" />
+              财务设置资金账户
+            </button>
 
             {/* Audit History */}
             <div className="space-y-2.5">

@@ -209,6 +209,9 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
   const [selectedContactId, setSelectedContactId] = useState('manual');
   const [useCoupon, setUseCoupon] = useState(false);
   const [selectedCouponId, setSelectedCouponId] = useState('');
+  const [approvalCodeInput, setApprovalCodeInput] = useState('');
+  const [generatedApprovalCode, setGeneratedApprovalCode] = useState('');
+  const [approvalCodeSent, setApprovalCodeSent] = useState(false);
 
   // Progress Details Modal State (当前进度/物流详情)
   const [trackingPlan, setTrackingPlan] = useState<SavedPlanRecord | null>(null);
@@ -263,17 +266,33 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
 
   const availableOrderCustomers = AdminStorageManager.getCustomers();
   const availableOrderCoupons = currentUser.coupons || [];
+  const selectedOrderCustomer = availableOrderCustomers.find(
+    (customer) => customer.id === orderCustomerId,
+  );
   const selectedOrderCoupon = availableOrderCoupons.find(
     (coupon) => coupon.id === selectedCouponId
   );
   const orderSubtotalYuan =
     (contactSalesPlan?.totalCostYuan || contactSalesPlan?.totalCostTenThousand || 0) *
     (contactSalesPlan?.totalCostYuan ? 1 : 10000);
+  const couponEligibleYuan =
+    contactSalesPlan?.couponEligibleAmount ?? orderSubtotalYuan;
+  const externalAmountYuan = contactSalesPlan?.externalAmount || 0;
+  const orderShippingFee = contactSalesPlan?.shippingFee || 0;
   const couponPreviewAmount = selectedOrderCoupon
     ? selectedOrderCoupon.type === 'discount'
-      ? Math.max(0, orderSubtotalYuan * (1 - selectedOrderCoupon.value / 10))
-      : Math.min(orderSubtotalYuan, selectedOrderCoupon.value)
+      ? Math.max(0, couponEligibleYuan * (1 - selectedOrderCoupon.value / 10))
+      : Math.min(couponEligibleYuan, selectedOrderCoupon.value)
     : 0;
+  const orderAmountDue = Math.max(
+    0,
+    Math.round(orderSubtotalYuan - couponPreviewAmount + orderShippingFee),
+  );
+  const availablePurchaseBalance = selectedOrderCustomer
+    ? selectedOrderCustomer.purchaseBalance ?? selectedOrderCustomer.balance ?? 0
+    : 0;
+  const purchaseBalancePreview = Math.min(availablePurchaseBalance, orderAmountDue);
+  const creditPaymentPreview = Math.max(0, orderAmountDue - purchaseBalancePreview);
 
   // Open Clone Plan Modal with default name "XXX 副本"
   const handleOpenCloneModal = (plan: SavedPlanRecord, e?: React.MouseEvent) => {
@@ -363,6 +382,9 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     );
     setUseCoupon(false);
     setSelectedCouponId('');
+    setApprovalCodeInput('');
+    setGeneratedApprovalCode('');
+    setApprovalCodeSent(false);
   };
 
   const handleSelectOrderContact = (contactId: string) => {
@@ -404,14 +426,52 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       showToast('请选择要使用的优惠券');
       return;
     }
+    if (!approvalCodeSent) {
+      showToast('请先发送销售审批验证码');
+      return;
+    }
+    if (approvalCodeInput !== generatedApprovalCode) {
+      showToast('销售审批验证码不正确');
+      return;
+    }
     const originalAmountYuan =
       contactSalesPlan.totalCostYuan || contactSalesPlan.totalCostTenThousand * 10000;
+    const eligibleCouponAmount =
+      contactSalesPlan.couponEligibleAmount ?? originalAmountYuan;
     const couponDiscountAmount = selectedCoupon
       ? selectedCoupon.type === 'discount'
-        ? Math.max(0, originalAmountYuan * (1 - selectedCoupon.value / 10))
-        : Math.min(originalAmountYuan, selectedCoupon.value)
+        ? Math.max(0, eligibleCouponAmount * (1 - selectedCoupon.value / 10))
+        : Math.min(eligibleCouponAmount, selectedCoupon.value)
       : 0;
-    const orderPaidAmount = Math.max(0, originalAmountYuan - couponDiscountAmount);
+    const orderPaidAmount = Math.max(
+      0,
+      originalAmountYuan - couponDiscountAmount + (contactSalesPlan.shippingFee || 0),
+    );
+    const balanceResult = AdminStorageManager.deductPurchaseBalance(
+      selectedCustomer,
+      Math.round(orderPaidAmount),
+      contactSalesPlan,
+    );
+    if (!balanceResult.success) {
+      showToast('进货款账户更新失败，请稍后重试');
+      return;
+    }
+    const creditPaymentAmount = Math.max(
+      0,
+      Math.round(orderPaidAmount) - balanceResult.deductedAmount,
+    );
+    if (
+      currentUser &&
+      (currentUser.id === selectedCustomer.id || currentUser.phone === selectedCustomer.phone)
+    ) {
+      window.setTimeout(() => {
+        onUpdateCurrentUser?.({
+          ...currentUser,
+          purchaseBalance: balanceResult.remainingBalance,
+          balance: balanceResult.remainingBalance,
+        });
+      }, 0);
+    }
 
     const generatedOrderNo =
       'ORD' +
@@ -468,6 +528,11 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       appliedCouponName: selectedCoupon?.name,
       couponDiscountAmount,
       orderPaidAmount,
+      purchaseBalanceDeducted: balanceResult.deductedAmount,
+      creditPaymentAmount,
+      balanceDeductedAt: nowTime,
+      shippingFee: contactSalesPlan.shippingFee,
+      shippingPolicyLabel: contactSalesPlan.shippingPolicyLabel,
       logisticsInfo: {
         orderNumber: generatedOrderNo,
         carrier: '顺丰速运 (待发货分配)',
@@ -488,7 +553,11 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
 
     onUpdatePlan(updatedPlan);
     setContactSalesPlan(null);
-    showToast('对接需求已提交，方案进入【审核中】');
+    showToast(
+      creditPaymentAmount > 0
+        ? `进货款已扣 ¥${balanceResult.deductedAmount.toLocaleString()}，信用支付 ¥${creditPaymentAmount.toLocaleString()}，方案进入审核`
+        : `进货款已扣 ¥${balanceResult.deductedAmount.toLocaleString()}，方案进入审核`,
+    );
 
     setTimeout(() => {
       setTrackingPlan(updatedPlan);
@@ -1233,6 +1302,23 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                   </select>
                 </div>
 
+                {selectedOrderCustomer && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-2.5">
+                      <p className="text-[9px] text-blue-600">进货款余额（可用）</p>
+                      <p className="mt-1 font-mono text-sm font-bold text-slate-900">
+                        ¥{(selectedOrderCustomer.purchaseBalance ?? selectedOrderCustomer.balance ?? 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-amber-100 bg-amber-50 p-2.5">
+                      <p className="text-[9px] text-amber-600">合作保证金（不可下单）</p>
+                      <p className="mt-1 font-mono text-sm font-bold text-slate-900">
+                        ¥{(selectedOrderCustomer.cooperationDeposit || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
                   <label className="flex items-center justify-between cursor-pointer">
                     <span>
@@ -1265,16 +1351,86 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                     </select>
                   )}
 
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="rounded-lg border border-blue-100 bg-white p-2">
+                      <p className="text-[9px] text-blue-600">自有产品 · 可用券</p>
+                      <p className="mt-1 font-mono text-xs font-bold text-slate-900">
+                        ¥{couponEligibleYuan.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-amber-100 bg-white p-2">
+                      <p className="text-[9px] text-amber-600">外协产品 · 不可用券</p>
+                      <p className="mt-1 font-mono text-xs font-bold text-slate-900">
+                        ¥{externalAmountYuan.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-[10px]">
                     <span className="text-slate-500">
-                      原价 ¥{orderSubtotalYuan.toLocaleString()}
+                      商品原价 ¥{orderSubtotalYuan.toLocaleString()} · 运费 ¥{orderShippingFee.toLocaleString()}
                     </span>
                     <span className="font-bold text-emerald-600">
                       优惠 -¥{Math.round(couponPreviewAmount).toLocaleString()} · 应付 ¥
-                      {Math.max(0, Math.round(orderSubtotalYuan - couponPreviewAmount)).toLocaleString()}
+                      {orderAmountDue.toLocaleString()}
                     </span>
                   </div>
+                  {selectedOrderCustomer && (
+                    <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-2.5">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500">本次进货款扣款</span>
+                        <span className="font-mono font-bold text-slate-900">
+                          ¥{purchaseBalancePreview.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500">信用支付</span>
+                        <span className={`font-mono font-bold ${creditPaymentPreview > 0 ? 'text-blue-600' : 'text-emerald-600'}`}>
+                          ¥{creditPaymentPreview.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-amber-600">合作保证金</span>
+                        <span className="font-bold text-amber-700">不参与本次支付</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="rounded-md bg-amber-50 px-2 py-1.5 text-[9px] text-amber-700">
+                    优惠券仅适用于自有产品 ¥{couponEligibleYuan.toLocaleString()}；外协产品 ¥
+                    {externalAmountYuan.toLocaleString()} 不参与优惠券。
+                  </div>
+                  <div className="text-[9px] text-slate-500">
+                    {contactSalesPlan.shippingPolicyLabel || (orderShippingFee === 0 ? '已满足包邮条件' : '未满足包邮条件')}
+                  </div>
                 </div>
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50/60 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-extrabold text-blue-900">销售审批验证</p>
+                    <p className="mt-0.5 text-[9px] text-blue-600">提交前需向负责销售发送并核验验证码</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = String(Math.floor(100000 + Math.random() * 900000));
+                      setGeneratedApprovalCode(code);
+                      setApprovalCodeSent(true);
+                      showToast(`销售审批验证码已发送（演示码 ${code}）`);
+                    }}
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-blue-700"
+                  >
+                    发送验证码
+                  </button>
+                </div>
+                <input
+                  value={approvalCodeInput}
+                  onChange={(event) => setApprovalCodeInput(event.target.value.replace(/\D/g, ''))}
+                  maxLength={6}
+                  placeholder="请输入6位销售审批验证码"
+                  className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 font-mono text-xs tracking-widest text-slate-900 outline-none focus:border-blue-500"
+                />
               </div>
 
               {/* Contact Info Form */}

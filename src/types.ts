@@ -1,5 +1,6 @@
 export type CurtainType = 'open_close' | 'roller';
 export type CurtainLayer = 'single' | 'double';
+export type SupplyType = 'self' | 'external';
 
 export interface LightingConfig {
   circuitsCount: number; // 几路灯
@@ -123,6 +124,7 @@ export interface EquipmentProduct {
   imageUrl: string; // 配图
   installationNotes: string; // 安装注意点
   description: string; // 规格/描述
+  supplyType?: SupplyType; // 自有产品 / 外协产品
 }
 
 export interface RoomSchemeDeviceItem {
@@ -136,6 +138,7 @@ export interface RoomSchemeDeviceItem {
   unitPrice: number;
   imageUrl: string;
   installationNotes?: string;
+  supplyType?: SupplyType;
 }
 
 export interface LayoutRoomSchemeConfig {
@@ -245,6 +248,12 @@ export interface UserProfile {
   consultantName?: string;
   consultantPhone?: string;
   balance?: number; // 用户App端已有余额
+  cooperationDeposit?: number; // 合作保证金
+  purchaseBalance?: number; // 进货款余额
+  accountEnabled?: boolean; // 账号是否启用
+  contractStartDate?: string;
+  contractEndDate?: string;
+  renewalReminderDays?: number;
   coupons?: CustomerCoupon[]; // 用户App端已有优惠券
   defaultContacts?: UserDefaultContact[]; // 个人中心多组默认联系人与收货地址
 }
@@ -278,6 +287,7 @@ export interface BalanceAuditRequest {
   customerPhone: string;
   originalBalance: number; // 原余额
   targetBalance: number; // 希望更改余额
+  accountType?: 'deposit' | 'purchase'; // 合作保证金 / 进货款
   changeAmount: number; // 调整变动金额 (targetBalance - originalBalance)
   remark: string; // 提交备注
   paymentProofUrl: string; // 付款截图
@@ -287,6 +297,19 @@ export interface BalanceAuditRequest {
   financeReviewer?: string; // 财务审核人员
   financeReviewedAt?: string; // 财务审核时间
   financeNote?: string; // 财务审核意见
+}
+
+export interface BalanceTransactionRecord {
+  id: string;
+  customerId?: string;
+  customerPhone?: string;
+  title: string;
+  note: string;
+  amount: number;
+  type: 'income' | 'expense';
+  accountType: 'deposit' | 'purchase';
+  time: string;
+  planId?: string;
 }
 
 export interface PlanChatMessage {
@@ -343,6 +366,19 @@ export interface SavedPlanRecord {
   couponDiscountAmount?: number;
   orderPaidAmount?: number;
   customerAddress?: string;
+  couponEligibleAmount?: number;
+  externalAmount?: number;
+  shippingFee?: number;
+  shippingPolicyLabel?: string;
+  purchaseBalanceDeducted?: number;
+  creditPaymentAmount?: number;
+  balanceDeductedAt?: string;
+  promotionGifts?: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
 }
 
 // Curated Plan Template
@@ -424,6 +460,12 @@ export interface Customer {
   assignedBusiness?: string; // 商务 (负责商务沟通、报价与签约)
   assignedOperations?: string; // 对应运营 (负责方案排期、交付施工与客户跟进)
   balance?: number; // 客户已有余额 (元)
+  cooperationDeposit?: number; // 合作保证金 (不可用于下单)
+  purchaseBalance?: number; // 进货款余额 (可用于下单)
+  accountEnabled?: boolean; // 是否允许使用 App
+  contractStartDate?: string;
+  contractEndDate?: string;
+  renewalReminderDays?: number;
   coupons?: CustomerCoupon[]; // 客户已有优惠券列表
   avatar?: string; // 客户头像
   memo?: string; // 客户便签
@@ -442,6 +484,30 @@ export interface Customer {
   wechat?: string; // 微信
   attachments?: string[]; // 附件
   isShared?: boolean; // 是否共享
+}
+
+export interface PromotionActivity {
+  id: string;
+  name: string;
+  enabled: boolean;
+  audience: 'all' | 'specified';
+  customerIds: string[];
+  conditionType: 'quantity' | 'amount';
+  conditionCategory: string;
+  conditionValue: number;
+  rewardProductId: string;
+  rewardProductName: string;
+  rewardQuantity: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface BusinessRuleSettings {
+  shippingThreshold: number;
+  shippingFee: number;
+  externalProductsIncludeFreeShipping: boolean;
+  defaultContractMonths: number;
+  renewalReminderDays: number;
 }
 
 // ---------------------------------------------------------------------------

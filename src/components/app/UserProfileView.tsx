@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   User,
   Phone,
@@ -28,7 +28,12 @@ import {
   ArrowUpRight,
   Search,
 } from 'lucide-react';
-import { UserProfile, UserDefaultContact, CustomerCoupon } from '../../types';
+import {
+  UserProfile,
+  UserDefaultContact,
+  CustomerCoupon,
+  BalanceTransactionRecord,
+} from '../../types';
 import { AdminStorageManager } from '../../utils/adminStorage';
 
 interface UserProfileViewProps {
@@ -73,6 +78,21 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [transactionQuery, setTransactionQuery] = useState('');
   const [visibleTransactionCount, setVisibleTransactionCount] = useState(5);
+  const [dynamicTransactions, setDynamicTransactions] = useState<BalanceTransactionRecord[]>(
+    () => AdminStorageManager.getBalanceTransactions(),
+  );
+
+  useEffect(() => {
+    const handleTransactionsUpdated = () => {
+      setDynamicTransactions(AdminStorageManager.getBalanceTransactions());
+    };
+    window.addEventListener('balance_transactions_updated', handleTransactionsUpdated);
+    window.addEventListener('customer_balance_updated', handleTransactionsUpdated);
+    return () => {
+      window.removeEventListener('balance_transactions_updated', handleTransactionsUpdated);
+      window.removeEventListener('customer_balance_updated', handleTransactionsUpdated);
+    };
+  }, []);
 
   // Default Contacts & Delivery Addresses (FEATURE 12: 设置多组默认联系人; 手机号码; 收获详细地址)
   const [contacts, setContacts] = useState<UserDefaultContact[]>(() =>
@@ -89,12 +109,25 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [contactIsDefaultInput, setContactIsDefaultInput] = useState(false);
 
   // User's Balance Amount
-  const currentBalance = typeof user.balance === 'number' ? user.balance : 26800;
+  const currentBalance =
+    typeof user.purchaseBalance === 'number'
+      ? user.purchaseBalance
+      : typeof user.balance === 'number'
+        ? user.balance
+        : 26800;
+  const depositBalance = typeof user.cooperationDeposit === 'number' ? user.cooperationDeposit : 0;
   const userCoupons = Array.isArray(user.coupons) ? user.coupons : [];
   const [selectedCoupon, setSelectedCoupon] = useState<CustomerCoupon | null>(null);
   const selectedDefaultContact = contacts.find((contact) => contact.isDefault) || contacts[0];
   const [activeTab, setActiveTab] = useState<'overview' | 'coupons' | 'contacts'>('overview');
-  const filteredTransactions = TRANSACTION_RECORDS.filter((transaction) => {
+  const allTransactions = [
+    ...dynamicTransactions,
+    ...TRANSACTION_RECORDS.map((transaction) => ({
+      ...transaction,
+      accountType: 'purchase' as const,
+    })),
+  ];
+  const filteredTransactions = allTransactions.filter((transaction) => {
     const matchesType =
       transactionFilter === 'all' || transaction.type === transactionFilter;
     const query = transactionQuery.trim().toLowerCase();
@@ -268,18 +301,23 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                 查看流水
               </button>
             </div>
-            <div className="mt-3 flex items-end justify-between rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-              <div>
-                <p className="text-[10px] text-blue-700">可用余额</p>
-                <p className="mt-1 font-mono text-2xl font-black text-slate-900">
-                  <span className="mr-1 text-sm font-medium text-slate-500">¥</span>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3.5">
+                <p className="text-[10px] font-bold text-blue-700">进货款</p>
+                <p className="mt-1 font-mono text-xl font-black text-slate-900">
+                  <span className="mr-1 text-xs font-medium text-slate-500">¥</span>
                   {currentBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                 </p>
+                <p className="mt-1 text-[9px] text-blue-600">可用于方案下单与货款抵扣</p>
               </div>
-              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                正常可用
-              </span>
+              <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-3.5">
+                <p className="text-[10px] font-bold text-amber-700">合作保证金</p>
+                <p className="mt-1 font-mono text-xl font-black text-slate-900">
+                  <span className="mr-1 text-xs font-medium text-slate-500">¥</span>
+                  {depositBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                </p>
+                <p className="mt-1 text-[9px] text-amber-600">仅作履约保证金，不可参与下单</p>
+              </div>
             </div>
           </div>
 
@@ -473,13 +511,24 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="border-b border-slate-200 bg-blue-50/50 p-4">
-                <p className="text-[10px] font-medium text-blue-700">当前可用余额</p>
-                <p className="mt-1 font-mono text-2xl font-black text-slate-900">
-                  <span className="mr-1 text-sm font-medium text-slate-500">¥</span>
-                  {currentBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="mt-1 text-[10px] text-slate-500">共 {filteredTransactions.length} 笔相关流水</p>
+              <div className="border-b border-slate-200 bg-slate-50 p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+                    <p className="text-[10px] font-bold text-blue-700">进货款余额</p>
+                    <p className="mt-1 font-mono text-xl font-black text-slate-900">
+                      ¥{currentBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="mt-1 text-[9px] text-blue-600">可参与下单抵扣</p>
+                  </div>
+                  <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                    <p className="text-[10px] font-bold text-amber-700">合作保证金</p>
+                    <p className="mt-1 font-mono text-xl font-black text-slate-900">
+                      ¥{depositBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="mt-1 text-[9px] text-amber-600">不可参与下单</p>
+                  </div>
+                </div>
+                <p className="mt-2 text-[10px] text-slate-500">共 {filteredTransactions.length} 笔相关流水</p>
               </div>
 
               <div className="space-y-3 p-4 text-xs">
@@ -538,7 +587,9 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-bold text-slate-900">{transaction.title}</p>
                             <p className="mt-1 truncate text-[10px] text-slate-400">{transaction.note}</p>
-                            <p className="mt-1 font-mono text-[9px] text-slate-400">{transaction.time}</p>
+                            <p className="mt-1 font-mono text-[9px] text-slate-400">
+                              {transaction.time} · {transaction.accountType === 'deposit' ? '合作保证金' : '进货款'}
+                            </p>
                           </div>
                           <span className={`shrink-0 font-mono text-sm font-black ${
                             isIncome ? 'text-emerald-600' : 'text-slate-800'

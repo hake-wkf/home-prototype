@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Wallet,
@@ -27,8 +27,11 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
   customer,
   onSuccess,
 }) => {
-  const originalBalance = typeof customer.balance === 'number' ? customer.balance : 26800;
-
+  const [accountType, setAccountType] = useState<'deposit' | 'purchase'>('purchase');
+  const originalBalance =
+    accountType === 'deposit'
+      ? customer.cooperationDeposit || 0
+      : customer.purchaseBalance ?? customer.balance ?? 26800;
   const [targetBalanceInput, setTargetBalanceInput] = useState<string>(
     String(originalBalance + 5000)
   );
@@ -38,6 +41,10 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
   );
   const [fileName, setFileName] = useState<string>('客户银行转账电子回单.png');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setTargetBalanceInput(String(originalBalance + 5000));
+  }, [accountType]);
 
   if (!isOpen) return null;
 
@@ -78,6 +85,7 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
       customerPhone: customer.phone,
       originalBalance,
       targetBalance: parsedTargetBalance,
+      accountType,
       changeAmount,
       remark: remark.trim(),
       paymentProofUrl: uploadedScreenshot,
@@ -102,7 +110,7 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
               <Wallet className="w-4.5 h-4.5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm tracking-tight">客户余额更改申请</h3>
+              <h3 className="font-extrabold text-sm tracking-tight">客户资金账户设置</h3>
               <p className="text-[11px] text-slate-400">
                 提交修改备注与付款截图 · 流转至财务审核后生效
               </p>
@@ -133,11 +141,46 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setAccountType('deposit')}
+              className={`rounded-xl border p-3 text-left cursor-pointer ${
+                accountType === 'deposit'
+                  ? 'border-amber-300 bg-amber-50'
+                  : 'border-slate-200 bg-white'
+              }`}
+            >
+              <span className="text-[10px] font-bold text-amber-700">合作保证金</span>
+              <span className="mt-1 block font-mono text-sm font-black text-slate-900">
+                ¥{(customer.cooperationDeposit || 0).toLocaleString()}
+              </span>
+              <span className="mt-1 block text-[9px] text-slate-400">不可参与下单</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType('purchase')}
+              className={`rounded-xl border p-3 text-left cursor-pointer ${
+                accountType === 'purchase'
+                  ? 'border-blue-300 bg-blue-50'
+                  : 'border-slate-200 bg-white'
+              }`}
+            >
+              <span className="text-[10px] font-bold text-blue-700">进货款</span>
+              <span className="mt-1 block font-mono text-sm font-black text-slate-900">
+                ¥{(customer.purchaseBalance ?? customer.balance ?? 0).toLocaleString()}
+              </span>
+              <span className="mt-1 block text-[9px] text-slate-400">可参与下单抵扣</span>
+            </button>
+          </div>
+
           {/* Balance Comparison Grid */}
           <div className="grid grid-cols-3 gap-2.5">
             {/* Original Balance (原余额 - 只读) */}
             <div className="p-3 bg-slate-100/90 border border-slate-200 rounded-2xl space-y-1">
-              <span className="text-[11px] font-bold text-slate-500 block">原余额 (不可改)</span>
+              <span className="text-[11px] font-bold text-slate-500 block">
+                原{accountType === 'deposit' ? '保证金' : '进货款'} (不可改)
+              </span>
               <div className="text-base font-black text-slate-800 font-mono">
                 ¥{originalBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
               </div>
@@ -147,7 +190,7 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
             {/* Target Balance Input (希望更改余额) */}
             <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-1">
               <label className="text-[11px] font-extrabold text-blue-900 block">
-                希望更改余额 <span className="text-rose-500">*</span>
+                希望更改金额 <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-2.5 top-1.5 text-xs text-blue-700 font-bold">¥</span>
@@ -161,7 +204,9 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
                   className="w-full bg-white border border-blue-300 rounded-xl pl-6 pr-2 py-1 text-sm font-black font-mono text-blue-900 outline-none focus:border-blue-600"
                 />
               </div>
-              <span className="text-[10px] text-blue-600 block">更改后账户实际金额</span>
+              <span className="text-[10px] text-blue-600 block">
+                {accountType === 'deposit' ? '财务确认后保证金生效' : '财务确认后进货款生效'}
+              </span>
             </div>
 
             {/* Change Amount (差额) */}

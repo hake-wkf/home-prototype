@@ -33,7 +33,13 @@ import {
   Maximize2,
   Upload,
 } from 'lucide-react';
-import { RenovationProject, CanvasPinItem } from '../types';
+import {
+  RenovationProject,
+  CanvasPinItem,
+  PromotionActivity,
+  SupplyType,
+  BusinessRuleSettings,
+} from '../types';
 import { calculateProjectCost } from '../utils/calculator';
 import { SAMPLE_FLOOR_PLAN_SVG } from '../data/presetData';
 import { InteractiveFloorPlanModal } from './InteractiveFloorPlanModal';
@@ -43,7 +49,18 @@ interface PlanSummaryBOMProps {
   onPrevStep: () => void;
   onGoToSetup: () => void;
   onSaveAsTemplate?: () => void;
-  onSaveRecord?: () => void;
+  onSaveRecord?: (summary: {
+    couponEligibleAmount: number;
+    externalAmount: number;
+    shippingFee: number;
+    shippingPolicyLabel: string;
+    promotionGifts: Array<{
+      productId: string;
+      productName: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+  }) => void;
   pageMode?: 'main' | 'editList';
   onPageModeChange?: (mode: 'main' | 'editList', deviceCount?: number) => void;
 }
@@ -60,7 +77,45 @@ export interface BOMDeviceItem {
   unitPrice: number;
   imageUrl: string;
   roomName?: string;
+  supplyType?: SupplyType;
+  isGift?: boolean;
 }
+
+const getSupplyType = (category: string, brand = ''): SupplyType => {
+  if (
+    category.includes('影音') ||
+    category.includes('门锁') ||
+    category.includes('灯具') ||
+    brand.includes('外协')
+  ) {
+    return 'external';
+  }
+  return 'self';
+};
+
+const DEFAULT_PROMOTIONS: PromotionActivity[] = [
+  {
+    id: 'promo_switch_10',
+    name: '翎扬系列开关满赠',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'quantity',
+    conditionCategory: '智能面板/开关',
+    conditionValue: 10,
+    rewardProductId: 'gift_switch_1',
+    rewardProductName: '翎扬智能开关（赠品）',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
+];
+
+type PromotionProgress = PromotionActivity & {
+  progress: number;
+  qualified: boolean;
+  claimed: boolean;
+};
 
 export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   project,
@@ -126,6 +181,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
       unitPrice: d.unitPrice,
       imageUrl: d.imageUrl,
       roomName: categoryRoomNameMap[d.roomCategory] || '公共区域',
+      supplyType: getSupplyType(d.category, d.brand),
     }));
 
     // Add accessories
@@ -141,6 +197,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
         unitPrice: 0,
         imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150&auto=format&fit=crop&q=60',
         roomName: '公共区域',
+        supplyType: 'self',
       },
       {
         id: 'acc-2',
@@ -153,6 +210,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
         unitPrice: 0,
         imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=150&auto=format&fit=crop&q=60',
         roomName: '公共区域',
+        supplyType: 'self',
       }
     );
 
@@ -444,6 +502,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
           unitPrice: p.price,
           imageUrl: p.imageUrl,
           roomName: targetRoomForAdd || '客厅',
+          supplyType: getSupplyType(p.subTag || p.category, p.brand),
         });
       }
     });
@@ -468,6 +527,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
       unitPrice: Math.max(0, Number(customForm.unitPrice) || 0),
       roomName: customForm.roomName || targetRoomForAdd || '客厅',
       imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=150&auto=format&fit=crop&q=60',
+      supplyType: getSupplyType(customForm.category),
     };
     setDeviceItems((prev) => [...prev, newItem]);
     setCustomForm({
@@ -508,6 +568,125 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   const finalTotalCost = discountedTotal + taxAmount;
   const totalDeviceCount = deviceItems.reduce((sum, item) => sum + item.qty, 0);
   const profitAmount = Math.round(discountedTotal * (profitMargin / 100));
+  const selfProductAmount = deviceItems
+    .filter((item) => item.supplyType !== 'external' && !item.isGift)
+    .reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
+  const externalProductAmount = deviceItems
+    .filter((item) => item.supplyType === 'external' && !item.isGift)
+    .reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
+  const currentProfile = AdminStorageManager.getUserProfile();
+  const currentCustomer = AdminStorageManager.getCustomers().find(
+    (customer) =>
+      customer.id === currentProfile.id ||
+      customer.phone === currentProfile.phone ||
+      customer.name === currentProfile.name,
+  );
+  const currentAudienceIds = new Set(
+    [currentProfile.id, currentCustomer?.id].filter(Boolean),
+  );
+  const today = new Date().toISOString().slice(0, 10);
+  const activePromotions: PromotionProgress[] = (() => {
+    try {
+      const stored = localStorage.getItem('zhijia_admin_promotions_v1');
+      return (stored ? JSON.parse(stored) : DEFAULT_PROMOTIONS) as PromotionActivity[];
+    } catch {
+      return DEFAULT_PROMOTIONS;
+    }
+  })()
+    .filter(
+      (promotion) =>
+        promotion.enabled &&
+        promotion.startDate <= today &&
+        promotion.endDate >= today &&
+        (promotion.audience === 'all' ||
+          promotion.customerIds.some((customerId) => currentAudienceIds.has(customerId))),
+    )
+    .map((promotion) => {
+      const categoryTokens = promotion.conditionCategory
+        .split(/[\/、,，]/)
+        .map((token) => token.trim())
+        .filter(Boolean);
+      const matchedCategoryItems = deviceItems.filter(
+        (item) =>
+          !item.isGift &&
+          categoryTokens.some(
+            (token) =>
+              item.category.includes(token) ||
+              item.model.includes(token) ||
+              item.description.includes(token),
+          ),
+      );
+      const progress =
+        promotion.conditionType === 'quantity'
+          ? matchedCategoryItems.reduce((sum, item) => sum + item.qty, 0)
+          : baseTotalCost;
+      const claimed = deviceItems.some(
+        (item) =>
+          item.isGift && item.id.startsWith(`gift_${promotion.id}`),
+      );
+      return {
+        ...promotion,
+        progress,
+        qualified: progress >= promotion.conditionValue,
+        claimed,
+      };
+    });
+  const applicablePromotion = activePromotions[0];
+  const promotionProgress = applicablePromotion?.progress ?? 0;
+  const promotionQualified = applicablePromotion?.qualified ?? false;
+  const promotionGiftClaimed = applicablePromotion?.claimed ?? false;
+  const businessRules = (() => {
+    try {
+      const stored = localStorage.getItem('zhijia_admin_business_rules_v1');
+      return (stored
+        ? JSON.parse(stored)
+        : {
+            shippingThreshold: 20000,
+            shippingFee: 300,
+            externalProductsIncludeFreeShipping: false,
+            defaultContractMonths: 12,
+            renewalReminderDays: 30,
+          }) as BusinessRuleSettings;
+    } catch {
+      return {
+        shippingThreshold: 20000,
+        shippingFee: 300,
+        externalProductsIncludeFreeShipping: false,
+        defaultContractMonths: 12,
+        renewalReminderDays: 30,
+      } as BusinessRuleSettings;
+    }
+  })();
+  const shippingEligibleAmount =
+    selfProductAmount +
+    (businessRules.externalProductsIncludeFreeShipping ? externalProductAmount : 0);
+  const shippingFee =
+    shippingEligibleAmount >= businessRules.shippingThreshold ? 0 : businessRules.shippingFee;
+  const shippingPolicyLabel =
+    shippingFee === 0
+      ? `满 ¥${businessRules.shippingThreshold.toLocaleString()} 已包邮`
+      : `未满 ¥${businessRules.shippingThreshold.toLocaleString()}，需支付运费 ¥${shippingFee}`;
+
+  const handleClaimPromotionGift = (promotion: PromotionProgress) => {
+    if (!promotion.qualified || promotion.claimed) return;
+    setDeviceItems((items) => [
+      ...items,
+      {
+        id: `gift_${promotion.id}_${Date.now()}`,
+        brand: '活动赠品',
+        category: '赠品',
+        model: promotion.rewardProductName,
+        description: `满足【${promotion.name}】条件，手动领取赠品`,
+        unit: '个',
+        qty: promotion.rewardQuantity,
+        unitPrice: 0,
+        imageUrl: '',
+        roomName: '活动赠品',
+        supplyType: 'self',
+        isGift: true,
+      },
+    ]);
+  };
 
   // Active rooms for breakdown
   const activeRooms = project.rooms.length > 0 ? project.rooms : [
@@ -570,6 +749,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
       unitPrice: 880,
       roomName: targetRoomForAdd || '客厅',
       imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=150&auto=format&fit=crop&q=60',
+      supplyType: 'self',
     };
     setDeviceItems((prev) => [...prev, newItem]);
     setIsAddProductModalOpen(false);
@@ -1458,6 +1638,15 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                     <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-500 shrink-0">
                       {item.category}
                     </span>
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold shrink-0 ${
+                      item.isGift
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : item.supplyType === 'external'
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-blue-50 text-blue-700'
+                    }`}>
+                      {item.isGift ? '赠品 ¥0' : item.supplyType === 'external' ? '外协产品' : '自有产品'}
+                    </span>
                   </div>
                   <p className="font-bold text-slate-900 leading-snug break-words">{item.model}</p>
                 </div>
@@ -1479,6 +1668,9 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                 </span>
                 <span>
                   总数: <strong className="text-slate-800 font-mono">{totalDeviceCount}</strong>
+                </span>
+                <span>
+                  优惠券可用: <strong className="text-slate-800 font-mono">¥{selfProductAmount.toLocaleString()}</strong>
                 </span>
               </div>
               <div>
@@ -1529,6 +1721,114 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {applicablePromotion && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-2xs">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-900">
+                <Sparkles className="h-4 w-4" />
+                {applicablePromotion.name}
+              </div>
+              <p className="mt-1 text-[11px] text-amber-700">
+                {promotionQualified
+                  ? `已满足条件，可领取 ${applicablePromotion.rewardProductName} × ${applicablePromotion.rewardQuantity}`
+                  : `再满足 ${applicablePromotion.conditionValue - promotionProgress} ${
+                      applicablePromotion.conditionType === 'quantity' ? '件' : '元'
+                    }即可领取赠品`}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={!promotionQualified || promotionGiftClaimed}
+              onClick={() =>
+                applicablePromotion && handleClaimPromotionGift(applicablePromotion)
+              }
+              className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold ${
+                promotionGiftClaimed
+                  ? 'bg-slate-200 text-slate-500'
+                  : promotionQualified
+                    ? 'bg-amber-500 text-white hover:bg-amber-600 cursor-pointer'
+                    : 'bg-white text-amber-500 border border-amber-200'
+              }`}
+            >
+              {promotionGiftClaimed ? '已领取' : '手动领取赠品'}
+            </button>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-amber-100">
+            <div
+              className="h-full rounded-full bg-amber-500"
+              style={{
+                width: `${Math.min(100, (promotionProgress / applicablePromotion.conditionValue) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {activePromotions.slice(1).map((promotion) => (
+        <div
+          key={promotion.id}
+          className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-2xs"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-900">
+                <Sparkles className="h-4 w-4" />
+                {promotion.name}
+              </div>
+              <p className="mt-1 text-[11px] text-amber-700">
+                {promotion.qualified
+                  ? `已满足条件，可领取 ${promotion.rewardProductName} × ${promotion.rewardQuantity}`
+                  : `再满足 ${Math.max(0, promotion.conditionValue - promotion.progress)} ${
+                      promotion.conditionType === 'quantity' ? '件' : '元'
+                    }即可领取赠品`}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={!promotion.qualified || promotion.claimed}
+              onClick={() => handleClaimPromotionGift(promotion)}
+              className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold ${
+                promotion.claimed
+                  ? 'bg-slate-200 text-slate-500'
+                  : promotion.qualified
+                    ? 'bg-amber-500 text-white hover:bg-amber-600 cursor-pointer'
+                    : 'bg-white text-amber-500 border border-amber-200'
+              }`}
+            >
+              {promotion.claimed ? '已领取' : '手动领取赠品'}
+            </button>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-amber-100">
+            <div
+              className="h-full rounded-full bg-amber-500"
+              style={{
+                width: `${Math.min(
+                  100,
+                  (promotion.progress / Math.max(1, promotion.conditionValue)) * 100,
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-slate-900">运费</p>
+            <p className="mt-1 text-[10px] text-slate-500">
+              自有产品满 ¥{businessRules.shippingThreshold.toLocaleString()} 含运费；外协产品不参与包邮。
+            </p>
+          </div>
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+            shippingFee === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+          }`}>
+            {shippingFee === 0 ? '已包邮' : `运费 ¥${shippingFee}`}
+          </span>
+        </div>
       </div>
 
       {/* 4. 点位图 Card (再点位图 · 改名字为点位图 · 去除就绪徽章 · 支持内外上传户型图) */}
@@ -1643,7 +1943,22 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
             {onSaveRecord && (
               <button
                 type="button"
-                onClick={onSaveRecord}
+                onClick={() =>
+                  onSaveRecord({
+                    couponEligibleAmount: selfProductAmount,
+                    externalAmount: externalProductAmount,
+                    shippingFee,
+                    shippingPolicyLabel,
+                    promotionGifts: deviceItems
+                      .filter((item) => item.isGift)
+                      .map((item) => ({
+                        productId: item.id,
+                        productName: item.model,
+                        quantity: item.qty,
+                        unitPrice: 0,
+                      })),
+                  })
+                }
                 className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-sm font-extrabold text-white shadow-md transition-all hover:bg-blue-700 active:scale-[0.99] cursor-pointer whitespace-nowrap"
               >
                 <Save className="h-5 w-5" />

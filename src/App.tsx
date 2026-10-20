@@ -43,6 +43,7 @@ import {
   FileStack,
   FolderHeart,
   LogIn,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function App() {
@@ -77,11 +78,17 @@ export default function App() {
 
   // Sync to local storage
   useEffect(() => {
-    AdminStorageManager.saveUserProfile(currentUser);
+    const persistedProfile = AdminStorageManager.getUserProfile();
+    if (JSON.stringify(persistedProfile) !== JSON.stringify(currentUser)) {
+      AdminStorageManager.saveUserProfile(currentUser);
+    }
   }, [currentUser]);
 
   useEffect(() => {
-    AdminStorageManager.saveSavedPlans(savedPlans);
+    const persistedPlans = AdminStorageManager.getSavedPlans();
+    if (JSON.stringify(persistedPlans) !== JSON.stringify(savedPlans)) {
+      AdminStorageManager.saveSavedPlans(savedPlans);
+    }
   }, [savedPlans]);
 
   // Real-time synchronization when backend admin updates plan audit/logistics status
@@ -93,8 +100,28 @@ export default function App() {
         setSavedPlans(AdminStorageManager.getSavedPlans());
       }
     };
-    const handleProfileSync = () => {
-      setCurrentUser(AdminStorageManager.getUserProfile());
+    const handleProfileSync = (event?: Event) => {
+      const latestProfile = AdminStorageManager.getUserProfile();
+      const detail = (event as CustomEvent | undefined)?.detail as
+        | {
+            customerId?: string;
+            customerPhone?: string;
+            newBalance?: number;
+            accountType?: 'deposit' | 'purchase';
+          }
+        | undefined;
+      const matchesCurrentUser =
+        detail?.customerId === latestProfile.id ||
+        detail?.customerPhone === latestProfile.phone;
+      if (matchesCurrentUser && typeof detail?.newBalance === 'number') {
+        if (detail.accountType === 'deposit') {
+          latestProfile.cooperationDeposit = detail.newBalance;
+        } else {
+          latestProfile.purchaseBalance = detail.newBalance;
+          latestProfile.balance = detail.newBalance;
+        }
+      }
+      setCurrentUser(latestProfile);
     };
     window.addEventListener('saved_plans_updated', handleSync);
     window.addEventListener('user_profile_updated', handleProfileSync);
@@ -238,7 +265,18 @@ export default function App() {
     window.setTimeout(() => setAppToast(null), 2600);
   };
 
-  const buildCurrentPlanRecord = (): SavedPlanRecord => {
+  const buildCurrentPlanRecord = (summary?: {
+    couponEligibleAmount: number;
+    externalAmount: number;
+    shippingFee: number;
+    shippingPolicyLabel: string;
+    promotionGifts: Array<{
+      productId: string;
+      productName: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+  }): SavedPlanRecord => {
     const nowTime = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
     const deviceCount = project.rooms.reduce((total, room) => {
       let count = 0;
@@ -264,14 +302,30 @@ export default function App() {
       status: '草稿',
       orderStatus: 'contact_sales',
       orderStatusLabel: '待对接',
+      couponEligibleAmount: summary?.couponEligibleAmount,
+      externalAmount: summary?.externalAmount,
+      shippingFee: summary?.shippingFee,
+      shippingPolicyLabel: summary?.shippingPolicyLabel,
+      promotionGifts: summary?.promotionGifts,
       project: JSON.parse(JSON.stringify(project)),
     };
     record.chatHistory = generateDefaultChatHistory(record);
     return record;
   };
 
-  const handleSaveCurrentPlan = () => {
-    const plan = buildCurrentPlanRecord();
+  const handleSaveCurrentPlan = (summary?: {
+    couponEligibleAmount: number;
+    externalAmount: number;
+    shippingFee: number;
+    shippingPolicyLabel: string;
+    promotionGifts: Array<{
+      productId: string;
+      productName: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+  }) => {
+    const plan = buildCurrentPlanRecord(summary);
     setSavedPlans((prev) => [plan, ...prev]);
     setAppTab('records');
     showAppToast('方案已保存到“我的记录”');
@@ -415,6 +469,28 @@ export default function App() {
 
   if (appMode === 'admin') {
     return <AdminPortal onSwitchToApp={() => setAppMode('app')} />;
+  }
+
+  if (currentUser.isLoggedIn && currentUser.accountEnabled === false) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 p-5">
+        <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+          <h1 className="mt-4 text-lg font-black text-slate-900">账号已停用</h1>
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            当前账户暂不可使用 App，请联系负责商务或平台管理员处理。
+          </p>
+          <button
+            onClick={() => setCurrentUser({ ...currentUser, isLoggedIn: false })}
+            className="mt-5 w-full rounded-lg bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800"
+          >
+            退出登录
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -640,6 +716,8 @@ export default function App() {
                   <SavedPlansView
                     savedPlans={savedPlans}
                     activeProject={project}
+                    currentUser={currentUser}
+                    onUpdateCurrentUser={setCurrentUser}
                     onLoadPlan={handleLoadPlan}
                     onDeletePlan={handleDeletePlan}
                     onClonePlan={handleClonePlan}

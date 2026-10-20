@@ -287,23 +287,21 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
       {/* 3. Main Plans Table (Enlarged font structure, spacious padding, comprehensive data) */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full min-w-[980px] table-fixed text-left text-sm border-collapse">
             <thead>
               <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold select-none text-xs">
-                <th className="py-4 px-5 w-72">方案信息 / 小区</th>
-                <th className="py-4 px-5 w-52">所属客户</th>
-                <th className="py-4 px-5 w-36 text-right">造价预估</th>
-                <th className="py-4 px-5 w-36">空间 / 设备</th>
-                <th className="py-4 px-5 w-40">方案审核</th>
-                <th className="py-4 px-5 w-72">客户对话沟通记录</th>
-                <th className="py-4 px-5 w-44">履约与物流进度</th>
-                <th className="py-4 px-5 w-48 text-center">操作</th>
+                <th className="py-4 px-4 w-60">方案信息 / 小区</th>
+                <th className="py-4 px-4 w-40">所属客户</th>
+                <th className="py-4 px-4 w-36 text-right">造价预估</th>
+                <th className="py-4 px-4 w-32">方案审核</th>
+                <th className="py-4 px-4 w-36">履约与物流进度</th>
+                <th className="py-4 px-4 w-44 text-center">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredPlans.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center text-slate-400">
+                  <td colSpan={6} className="py-16 text-center text-slate-400">
                     <FolderKanban className="w-12 h-12 text-slate-300 mx-auto mb-2 opacity-60" />
                     <p className="font-bold text-base text-slate-600">未找到符合条件的方案记录</p>
                     <p className="text-xs text-slate-400 mt-1">请输入正确的客户手机号或小区名称搜索</p>
@@ -322,12 +320,12 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                       onClick={() => setActiveChatPlan(plan)}
                     >
                       {/* 1. Plan Title & Community */}
-                      <td className="py-4 px-5">
+                      <td className="py-4 px-4">
                         <div className="flex items-start space-x-3">
                           <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
                             <FolderKanban className="w-5 h-5" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="font-black text-slate-900 text-base group-hover:text-blue-600 transition-colors leading-snug">
                               {plan.title}
                             </div>
@@ -340,12 +338,20 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                             <div className="text-xs text-slate-400 font-mono mt-0.5">
                               户型: {plan.presetTitle || '标准户型'} · {plan.createdAt}
                             </div>
+                            <div className="mt-2 flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-500">
+                              <MessageSquare className="h-3 w-3 shrink-0 text-blue-500" />
+                              <span className="truncate">
+                                {lastMessage
+                                  ? `最近沟通：${lastMessage.senderName || '客户'} · ${lastMessage.content}`
+                                  : '暂无客户沟通记录'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
 
                       {/* 2. 所属客户 (Name on top, Mobile Phone below; NO VIP) */}
-                      <td className="py-4 px-5">
+                      <td className="py-4 px-4">
                         <div className="space-y-1">
                           <div className="font-extrabold text-slate-900 text-base">
                             {plan.customerName || '未登记姓名'}
@@ -358,7 +364,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                       </td>
 
                       {/* 3. 造价预估 */}
-                      <td className="py-4 px-5 text-right">
+                      <td className="py-4 px-4 text-right">
                         <div className="font-mono">
                           <span className="text-lg font-black text-blue-600">
                             {plan.totalCostTenThousand}
@@ -368,20 +374,18 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                         <div className="text-xs text-slate-400 font-mono mt-0.5">
                           ¥{(plan.totalCostYuan || (plan.totalCostTenThousand || 0) * 10000).toLocaleString()}
                         </div>
-                      </td>
-
-                      {/* 4. 空间 / 设备 */}
-                      <td className="py-4 px-5">
-                        <div className="font-bold text-slate-900 font-mono text-sm">
-                          {plan.roomsCount || plan.project?.rooms?.length || 4} 个规划空间
-                        </div>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">
-                          共 {plan.deviceCount || 20} 件智能硬件
+                        <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-slate-500">
+                          <span className="shrink-0 whitespace-nowrap rounded bg-slate-100 px-1.5 py-0.5">
+                            {plan.roomsCount || plan.project?.rooms?.length || 4} 空间
+                          </span>
+                          <span className="shrink-0 whitespace-nowrap rounded bg-slate-100 px-1.5 py-0.5">
+                            {plan.deviceCount || 20} 件设备
+                          </span>
                         </div>
                       </td>
 
                       {/* 5. 方案审核 */}
-                      <td className="py-4 px-5">
+                      <td className="py-4 px-4">
                         <div className="space-y-1.5">
                           <span
                             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${
@@ -411,36 +415,8 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                         </div>
                       </td>
 
-                      {/* 6. 客户对话沟通记录 (Prominent & Clear) */}
-                      <td className="py-4 px-5" onClick={(e) => { e.stopPropagation(); setActiveChatPlan(plan); }}>
-                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-blue-500 hover:bg-blue-50/60 transition-all">
-                          <div className="flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1.5 font-black text-xs text-blue-700">
-                              <MessageSquare className="w-4 h-4" />
-                              <span>对话沟通记录</span>
-                            </span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold font-mono ${
-                              chatCount > 0 ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-600'
-                            }`}>
-                              {chatCount} 条消息
-                            </span>
-                          </div>
-
-                          {lastMessage ? (
-                            <div className="mt-1.5 text-xs text-slate-700 leading-relaxed line-clamp-2">
-                              <span className="font-bold text-slate-800">{lastMessage.senderName}: </span>
-                              <span>{lastMessage.content}</span>
-                            </div>
-                          ) : (
-                            <div className="mt-1.5 text-xs text-slate-400 italic">
-                              暂无互动消息，点击打开对话抽屉
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
                       {/* 7. 履约与物流进度 (No SF tracking string) */}
-                      <td className="py-4 px-5" onClick={(e) => { e.stopPropagation(); setActiveLogisticsPlan(plan); }}>
+                      <td className="py-4 px-4" onClick={(e) => { e.stopPropagation(); setActiveLogisticsPlan(plan); }}>
                         <div>
                           {plan.orderStatus === 'delivered' ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -466,25 +442,25 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                       </td>
 
                       {/* 8. 操作 */}
-                      <td className="py-4 px-5 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center space-x-2">
+                      <td className="py-4 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-wrap items-center justify-center gap-1">
                           <button
                             onClick={() => setActiveChatPlan(plan)}
-                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
                             title="查看与回复客户对话"
                           >
                             <MessageSquare className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setActiveBomPlan(plan)}
-                            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                             title="查看BOM清单与空间详情"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setActiveLogisticsPlan(plan)}
-                            className="p-2 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                             title="查看物流详情"
                           >
                             <Truck className="w-4 h-4" />
@@ -492,7 +468,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                           {planAuditStatus !== 'approved' && (
                             <button
                               onClick={() => openAuditModal(plan, 'approve')}
-                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                               title="审核通过"
                             >
                               <Check className="w-4 h-4" />
@@ -501,7 +477,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                           {planAuditStatus !== 'rejected' && (
                             <button
                               onClick={() => openAuditModal(plan, 'reject')}
-                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                               title="审核驳回"
                             >
                               <XCircle className="w-4 h-4" />

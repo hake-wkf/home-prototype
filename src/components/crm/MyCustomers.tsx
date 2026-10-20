@@ -29,6 +29,7 @@ interface MyCustomersProps {
   customers: Customer[];
   onSelectCustomer: (customer: Customer) => void;
   onAddCustomer: (customer: Customer) => void;
+  onUpdateCustomer: (customer: Customer) => void;
   onBatchDelete: (selectedIds: string[]) => void;
   onToggleShare: (customerId: string) => void;
   onShowToast?: (msg: string) => void;
@@ -39,6 +40,7 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
   customers,
   onSelectCustomer,
   onAddCustomer,
+  onUpdateCustomer,
   onBatchDelete,
   onToggleShare,
   onShowToast,
@@ -261,6 +263,14 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
                       p.customerName === cust.name ||
                       (cust.name === '卫科帆' && p.customerName === '卫科帆')
                   );
+                  const renewalDays = cust.contractEndDate
+                    ? Math.ceil(
+                        (new Date(cust.contractEndDate).getTime() - Date.now()) /
+                          (1000 * 60 * 60 * 24),
+                      )
+                    : null;
+                  const renewalWarning =
+                    renewalDays !== null && renewalDays <= (cust.renewalReminderDays || 30);
 
                   return (
                     <tr
@@ -282,11 +292,27 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
                       {/* 客户信息 (姓名、电话、小区 - 已去掉客户级别与状态) */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="space-y-0.5">
-                          <span className="font-extrabold text-sm text-slate-900 block">{cust.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-sm text-slate-900 block">{cust.name}</span>
+                            <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${
+                              cust.accountEnabled === false
+                                ? 'bg-rose-50 text-rose-700'
+                                : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              {cust.accountEnabled === false ? '已停用' : '正常'}
+                            </span>
+                          </div>
                           <p className="text-slate-500 font-mono text-[11px]">{cust.phone}</p>
                           <p className="text-slate-400 text-[10px] truncate max-w-[160px]">
                             📍 {cust.community || cust.projectName || '未填小区'}
                           </p>
+                          {renewalWarning && (
+                            <p className="text-[10px] font-bold text-amber-600">
+                              {renewalDays !== null && renewalDays < 0
+                                ? `合同已到期 ${Math.abs(renewalDays)} 天`
+                                : `距续约提醒还有 ${renewalDays} 天`}
+                            </p>
+                          )}
                         </div>
                       </td>
 
@@ -308,11 +334,21 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
                         </div>
                       </td>
 
-                      {/* 客户已有余额 (FEATURE 8 - 已去掉表格中更改余额 >) */}
+                      {/* 客户资金账户 */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-1 font-mono font-extrabold text-slate-900 text-sm">
-                          <span className="text-xs text-slate-400 font-normal">¥</span>
-                          <span>{custBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-slate-400">进货款</span>
+                            <span className="font-bold text-slate-900">
+                              ¥{(cust.purchaseBalance ?? custBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-amber-600">保证金</span>
+                            <span className="font-bold text-amber-700">
+                              ¥{(cust.cooperationDeposit || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
                         </div>
                       </td>
 
@@ -355,12 +391,24 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
 
                       {/* 操作 */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => onSelectCustomer(cust)}
-                          className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-slate-800 cursor-pointer"
-                        >
-                          查看详情
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => onSelectCustomer(cust)}
+                            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-slate-800 cursor-pointer"
+                          >
+                            查看详情
+                          </button>
+                          <button
+                            onClick={() => onUpdateCustomer({ ...cust, accountEnabled: cust.accountEnabled === false })}
+                            className={`rounded-lg border px-2.5 py-1.5 text-xs font-bold cursor-pointer ${
+                              cust.accountEnabled === false
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : 'border-rose-200 bg-rose-50 text-rose-700'
+                            }`}
+                          >
+                            {cust.accountEnabled === false ? '启用' : '停用'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -388,7 +436,7 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
       <NewCustomerModal
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
-        onAddCustomer={onAddCustomer}
+        onSave={onAddCustomer}
       />
 
       {/* Change Balance Modal (FEATURE 9: 更改余额到财务，提交备注和付款截图) */}

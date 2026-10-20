@@ -66,6 +66,7 @@ import { FinanceAuditCenter } from './crm/FinanceAuditCenter';
 import { CouponManagement } from './crm/CouponManagement';
 import { AdminCustomerTemplates } from './admin/AdminCustomerTemplates';
 import { AdminCustomerPlanRecords } from './admin/AdminCustomerPlanRecords';
+import { AdminBusinessRules } from './admin/AdminBusinessRules';
 
 interface AdminPortalProps {
   onSwitchToApp: () => void;
@@ -87,6 +88,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     | 'layoutPresets'
     | 'roomSmartSchemes'
     | 'equipmentCatalog'
+    | 'businessRules'
   >('myCustomers');
 
   // Nav Accordion Toggles
@@ -154,6 +156,25 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     AdminStorageManager.saveCustomers(updated);
     if (selectedCustomer?.id === updatedCust.id) {
       setSelectedCustomer(updatedCust);
+    }
+    try {
+      const profile = AdminStorageManager.getUserProfile();
+      if (profile.id === updatedCust.id || profile.phone === updatedCust.phone) {
+        AdminStorageManager.saveUserProfile({
+          ...profile,
+          name: updatedCust.name,
+          phone: updatedCust.phone,
+          accountEnabled: updatedCust.accountEnabled !== false,
+          cooperationDeposit: updatedCust.cooperationDeposit,
+          purchaseBalance: updatedCust.purchaseBalance,
+          balance: updatedCust.purchaseBalance ?? updatedCust.balance,
+          contractStartDate: updatedCust.contractStartDate,
+          contractEndDate: updatedCust.contractEndDate,
+          renewalReminderDays: updatedCust.renewalReminderDays,
+        });
+      }
+    } catch {
+      // ignore profile sync errors
     }
     showToast(`客户【${updatedCust.name}】信息已更新`);
   };
@@ -790,6 +811,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
                       {equipmentProducts.length}
                     </span>
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab('businessRules')}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                      activeTab === 'businessRules'
+                        ? 'bg-blue-50 text-blue-700 font-bold border-l-2 border-blue-600'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Settings className="h-3.5 w-3.5 text-blue-600" />
+                      <span>业务规则中心</span>
+                    </div>
+                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
+                      新增
+                    </span>
+                  </button>
                 </div>
               )}
             </div>
@@ -920,6 +958,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
               customers={customers}
               onSelectCustomer={handleSelectCustomer}
               onAddCustomer={handleAddCustomer}
+              onUpdateCustomer={handleUpdateCustomer}
               onBatchDelete={handleBatchDelete}
               onToggleShare={handleToggleShare}
               onShowToast={showToast}
@@ -1451,6 +1490,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
                   ))}
               </div>
             </div>
+          )}
+
+          {activeTab === 'businessRules' && (
+            <AdminBusinessRules customers={customers} onShowToast={showToast} />
           )}
         </main>
       </div>
