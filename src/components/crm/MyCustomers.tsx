@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { Customer, PriceGrade, SavedPlanRecord } from '../../types';
 import { NewCustomerModal } from './NewCustomerModal';
-import { AssignModal } from './AssignModal';
 import { ChangeBalanceModal } from './ChangeBalanceModal';
 import { CustomerSubmittedPlansModal } from './CustomerSubmittedPlansModal';
 import { AdminStorageManager } from '../../utils/adminStorage';
@@ -30,12 +29,6 @@ interface MyCustomersProps {
   customers: Customer[];
   onSelectCustomer: (customer: Customer) => void;
   onAddCustomer: (customer: Customer) => void;
-  onAssignPersonnel: (
-    business: string,
-    operations: string,
-    selectedIds: string[],
-    note: string,
-  ) => void;
   onBatchDelete: (selectedIds: string[]) => void;
   onToggleShare: (customerId: string) => void;
   onShowToast?: (msg: string) => void;
@@ -46,7 +39,6 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
   customers,
   onSelectCustomer,
   onAddCustomer,
-  onAssignPersonnel,
   onBatchDelete,
   onToggleShare,
   onShowToast,
@@ -59,8 +51,6 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
   // Modals & Selection
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [assignmentTargets, setAssignmentTargets] = useState<Customer[]>([]);
 
   // Balance Change Modal State
   const [balanceCustomer, setBalanceCustomer] = useState<Customer | null>(null);
@@ -211,20 +201,6 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center space-x-2 text-xs">
-            {selectedIds.length > 0 && (
-              <button
-                onClick={() => {
-                  setAssignmentTargets(
-                    myCustomerList.filter((customer) => selectedIds.includes(customer.id)),
-                  );
-                  setIsAssignModalOpen(true);
-                }}
-                className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 font-bold text-blue-700 hover:bg-blue-100 cursor-pointer"
-              >
-                <UserCheck className="h-3.5 w-3.5" />
-                <span>批量指派</span>
-              </button>
-            )}
             <button
               onClick={() => setIsNewModalOpen(true)}
               className="flex items-center space-x-1 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all cursor-pointer"
@@ -379,23 +355,12 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
 
                       {/* 操作 */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => onSelectCustomer(cust)}
-                            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-slate-800 cursor-pointer"
-                          >
-                            查看详情
-                          </button>
-                          <button
-                            onClick={() => {
-                              setAssignmentTargets([cust]);
-                              setIsAssignModalOpen(true);
-                            }}
-                            className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-100 cursor-pointer"
-                          >
-                            指派人员
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => onSelectCustomer(cust)}
+                          className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-slate-800 cursor-pointer"
+                        >
+                          查看详情
+                        </button>
                       </td>
                     </tr>
                   );
@@ -424,27 +389,6 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         onAddCustomer={onAddCustomer}
-      />
-
-      {/* Assign Modal */}
-      <AssignModal
-        isOpen={isAssignModalOpen}
-        customers={assignmentTargets}
-        onClose={() => {
-          setIsAssignModalOpen(false);
-          setAssignmentTargets([]);
-        }}
-        onConfirm={(business, operations, note) => {
-          onAssignPersonnel(
-            business,
-            operations,
-            assignmentTargets.map((customer) => customer.id),
-            note,
-          );
-          setIsAssignModalOpen(false);
-          setAssignmentTargets([]);
-          setSelectedIds([]);
-        }}
       />
 
       {/* Change Balance Modal (FEATURE 9: 更改余额到财务，提交备注和付款截图) */}

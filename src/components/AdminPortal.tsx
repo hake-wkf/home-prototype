@@ -185,52 +185,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     showToast('跟进记录已成功添加');
   };
 
-  const handleAssignPersonnel = (
-    assignedBusiness: string,
-    assignedOperations: string,
-    selectedIds: string[],
-    note: string,
-  ) => {
-    const now = new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16);
-    const updated = customers.map((c) => {
-      if (selectedIds.includes(c.id)) {
-        return {
-          ...c,
-          salesperson: assignedBusiness,
-          assignedBusiness,
-          assignedOperations,
-          assignedTo: assignedBusiness,
-          isPool: false,
-          updatedAt: now,
-        };
-      }
-      return c;
-    });
-    setCustomers(updated);
-    AdminStorageManager.saveCustomers(updated);
-
-    const newLogs: FollowUpRecord[] = selectedIds.map((id, idx) => {
-      const cust = customers.find((c) => c.id === id);
-      return {
-        id: `fu_${Date.now()}_${idx}`,
-        customerId: id,
-        time: now,
-        method: '指派客户',
-        matter: `将项目客户[${cust?.projectName || '智能方案'}] 指派给商务【${assignedBusiness}】、运营【${assignedOperations}】`,
-        result: note || '已完成人员指派',
-        type: '日志',
-        operator: '卫科帆',
-      };
-    });
-    const updatedFu = [...newLogs, ...followUps];
-    setFollowUps(updatedFu);
-    AdminStorageManager.saveFollowUps(updatedFu);
-
-    showToast(
-      `已将 ${selectedIds.length} 位客户指派给商务【${assignedBusiness}】、运营【${assignedOperations}】`,
-    );
-  };
-
   const handleBatchDelete = (selectedIds: string[]) => {
     const updated = customers.filter((c) => !selectedIds.includes(c.id));
     setCustomers(updated);
@@ -966,7 +920,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
               customers={customers}
               onSelectCustomer={handleSelectCustomer}
               onAddCustomer={handleAddCustomer}
-              onAssignPersonnel={handleAssignPersonnel}
               onBatchDelete={handleBatchDelete}
               onToggleShare={handleToggleShare}
               onShowToast={showToast}
