@@ -426,21 +426,21 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
                         更新: {plan.updatedAt || plan.createdAt}
                       </span>
                       <div className="flex items-center gap-2">
-                        {auditStatus !== 'approved' && (
-                          <button
-                            onClick={() => handlePlanAudit(plan, true)}
-                            className="rounded-md bg-emerald-50 px-2 py-1 font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer"
-                          >
-                            审核通过
-                          </button>
-                        )}
-                        {auditStatus !== 'rejected' && (
-                          <button
-                            onClick={() => handlePlanAudit(plan, false)}
-                            className="rounded-md bg-rose-50 px-2 py-1 font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
-                          >
-                            驳回
-                          </button>
+                        {auditStatus === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handlePlanAudit(plan, true)}
+                              className="rounded-md bg-emerald-50 px-2 py-1 font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                            >
+                              审核通过
+                            </button>
+                            <button
+                              onClick={() => handlePlanAudit(plan, false)}
+                              className="rounded-md bg-rose-50 px-2 py-1 font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
+                            >
+                              驳回
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={() => {

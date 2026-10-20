@@ -6,7 +6,6 @@ import {
   X,
   Check,
   Building2,
-  FileEdit,
   LogOut,
   Clock,
   Wallet,
@@ -68,9 +67,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [editPhone, setEditPhone] = useState(user.phone || '17696180841');
   const [editCity, setEditCity] = useState(user.city || '北京市 / 朝阳区');
   const [editCommunity, setEditCommunity] = useState(user.communityName || '万科翡翠公园');
-  const [editNotes, setEditNotes] = useState(
-    user.customNotes || '意向全屋无主灯与智能窗帘方案，待商务审核勘测。'
-  );
 
   // Balance Details Modal State
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
@@ -180,7 +176,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       phone: editPhone.trim() || '17696180841',
       city: editCity.trim() || '北京市 / 朝阳区',
       communityName: editCommunity.trim() || '万科翡翠公园',
-      customNotes: editNotes.trim(),
     };
     onUpdateUser(updated);
     setIsEditingProfile(false);
@@ -246,7 +241,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
               setEditPhone(user.phone || '17696180841');
               setEditCity(user.city || '北京市 / 朝阳区');
               setEditCommunity(user.communityName || '万科翡翠公园');
-              setEditNotes(user.customNotes || '');
               setIsEditingProfile(true);
             }}
             className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
@@ -320,16 +314,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
               <ChevronRight className="h-4 w-4 text-slate-300" />
             </button>
           </div>
-
-          {user.customNotes && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
-                <FileEdit className="h-3.5 w-3.5" />
-                需求备注
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-slate-700">{user.customNotes}</p>
-            </div>
-          )}
 
           <button
             onClick={handleLogout}
@@ -824,18 +808,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                  需求备忘 / 客户手输记录
-                </label>
-                <textarea
-                  rows={3}
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 outline-none resize-none leading-relaxed focus:bg-white focus:border-slate-900"
-                  placeholder="可在此手输客户习惯、施工要求或设备特殊偏好..."
-                />
-              </div>
             </div>
 
             <div className="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2 shrink-0">
