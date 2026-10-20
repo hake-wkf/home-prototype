@@ -1,13 +1,27 @@
 import React, { useState } from 'react';
-import { X, UserCheck } from 'lucide-react';
+import { UserCheck, X } from 'lucide-react';
 import { Customer } from '../../types';
 
 interface AssignModalProps {
   isOpen: boolean;
   customers: Customer[];
   onClose: () => void;
-  onConfirm: (targetSalesperson: string, note: string) => void;
+  onConfirm: (business: string, operations: string, note: string) => void;
 }
+
+const BUSINESS_OPTIONS = [
+  '王浩',
+  '李伟',
+  '韩梅梅',
+  '陈建',
+];
+
+const OPERATION_OPTIONS = [
+  '赵敏',
+  '周运营',
+  '孙亮',
+  '钱华',
+];
 
 export const AssignModal: React.FC<AssignModalProps> = ({
   isOpen,
@@ -15,87 +29,86 @@ export const AssignModal: React.FC<AssignModalProps> = ({
   onClose,
   onConfirm,
 }) => {
-  const [salesperson, setSalesperson] = useState('卫科帆');
-  const [note, setNote] = useState('');
+  const [business, setBusiness] = useState('王浩');
+  const [operations, setOperations] = useState('赵敏');
 
   if (!isOpen || customers.length === 0) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onConfirm(salesperson, note);
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    onConfirm(business, operations, '');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-xs p-4 animate-fadeIn">
-      <div
-        className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scaleIn"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-white">
-          <div className="flex items-center space-x-2">
-            <UserCheck className="w-4 h-4 text-blue-600" />
-            <h3 className="text-sm font-bold text-slate-800">指派 / 分配客户</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-xs animate-fadeIn">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-scaleIn">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-blue-600" />
+            <h3 className="text-sm font-bold text-slate-800">指派负责人员</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 cursor-pointer"
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 text-xs space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-5 text-xs">
           <div>
-            <span className="text-slate-500 block mb-1">待分配客户:</span>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 max-h-24 overflow-y-auto space-y-1">
-              {customers.map((c) => (
-                <div key={c.id} className="flex items-center justify-between font-medium text-slate-800">
-                  <span>{c.name} ({c.projectName})</span>
-                  <span className="text-slate-400 font-mono text-[11px]">{c.phone}</span>
+            <span className="mb-1 block text-slate-500">待指派客户</span>
+            <div className="max-h-24 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+              {customers.map((customer) => (
+                <div key={customer.id} className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-800">{customer.name}</span>
+                  <span className="font-mono text-[10px] text-slate-400">{customer.phone}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">指派给业务员/顾问:</label>
-            <select
-              value={salesperson}
-              onChange={(e) => setSalesperson(e.target.value)}
-              className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer font-medium"
-            >
-              <option value="卫科帆">卫科帆 (高级客户顾问)</option>
-              <option value="李明">李明 (方案设计师)</option>
-              <option value="王工">王工 (智能工程师)</option>
-              <option value="陈工">陈工 (项目交付经理)</option>
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-bold text-slate-700">负责商务</label>
+              <select
+                value={business}
+                onChange={(event) => setBusiness(event.target.value)}
+                className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium text-slate-900 outline-none focus:border-blue-500"
+              >
+                {BUSINESS_OPTIONS.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-bold text-slate-700">负责运营</label>
+              <select
+                value={operations}
+                onChange={(event) => setOperations(event.target.value)}
+                className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 font-medium text-slate-900 outline-none focus:border-blue-500"
+              >
+                {OPERATION_OPTIONS.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-slate-600 mb-1">指派备注 (选填):</label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="如: 该客户对无主灯调光感兴趣，请尽快跟进"
-              className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
-            />
-          </div>
-
-          <div className="flex items-center justify-end space-x-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium cursor-pointer"
+              className="rounded-lg border border-slate-300 px-4 py-1.5 font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
-              className="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer"
+              className="rounded-lg bg-blue-600 px-5 py-1.5 font-bold text-white shadow-sm hover:bg-blue-700 cursor-pointer"
             >
-              确定分配
+              确认指派
             </button>
           </div>
         </form>

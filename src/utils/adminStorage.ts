@@ -1914,6 +1914,10 @@ export class AdminStorageManager {
           recipientPhone: plan.customerPhone || '17696180841',
           shippingAddress: '待修改',
           businessManagerName: '审核中心',
+          businessManagerPhone: '186-0010-8899',
+          trackingNumber: '待出库分配',
+          shippingDate: '待排期',
+          estimatedArrivalDate: '待确认',
           currentStepIndex: 0,
           timeline: [],
         }),
@@ -2180,4 +2184,3 @@ export const INITIAL_FLOOR_DESIGNS: FloorPlanDesignProject[] = [
     ],
   },
 ];
-

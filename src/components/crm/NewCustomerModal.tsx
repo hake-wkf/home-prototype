@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Plus, ChevronRight } from 'lucide-react';
-import { Customer, CustomerStatus, CustomerLevel, CustomerType, PriceGrade } from '../../types';
+import { Customer, CustomerType, PriceGrade } from '../../types';
 
 interface NewCustomerModalProps {
   isOpen: boolean;
@@ -17,12 +17,10 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [projectName, setProjectName] = useState('');
-  const [status, setStatus] = useState<CustomerStatus>('资源客户');
   const [phone, setPhone] = useState('');
   const [region, setRegion] = useState('北京-北京-朝阳');
   const [detailAddress, setDetailAddress] = useState('');
   const [source, setSource] = useState('上门用户');
-  const [level, setLevel] = useState<CustomerLevel>('普通客户');
   const [category, setCategory] = useState<CustomerType>('家装客户');
   const [designer, setDesigner] = useState('');
   const [salesperson, setSalesperson] = useState('卫科帆');
@@ -47,8 +45,6 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
       projectName: projectName.trim(),
       phone: phone.trim() || '17696180841',
       followUpStatus: '未跟进',
-      status,
-      deliveryStatus: '未交付',
       priceGrade,
       salesperson,
       creator: '卫科帆',
@@ -58,7 +54,6 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
       region,
       detailAddress: detailAddress.trim() || '北京顺义区大槐树镇',
       source,
-      level,
       category,
       designer: designer.trim() || '测试',
       firstContactDate,
@@ -99,7 +94,7 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
               <span className="font-bold text-slate-900 border-b-2 border-blue-600 pb-0.5">基本信息</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-slate-700 font-medium mb-1">
                   <span className="text-rose-500">*</span> 客户姓名:
@@ -128,21 +123,6 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">
-                  <span className="text-rose-500">*</span> 客户状态:
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as CustomerStatus)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="资源客户">资源客户</option>
-                  <option value="意向客户">意向客户</option>
-                  <option value="签约客户">签约客户</option>
-                  <option value="丢单客户">丢单客户</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -210,20 +190,6 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                   <option value="渠道介绍">渠道介绍</option>
                   <option value="装修公司">装修公司</option>
                   <option value="其他">其他</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">客户级别:</label>
-                <select
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value as CustomerLevel)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="普通客户">普通客户</option>
-                  <option value="重要客户">重要客户</option>
-                  <option value="优质客户">优质客户</option>
-                  <option value="战略客户">战略客户</option>
                 </select>
               </div>
 

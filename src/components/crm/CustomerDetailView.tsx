@@ -29,6 +29,7 @@ import { CustomerInfoModal } from './CustomerInfoModal';
 import { NewFollowUpModal } from './NewFollowUpModal';
 import { AssignModal } from './AssignModal';
 import { ChangeBalanceModal } from './ChangeBalanceModal';
+import { CustomerSubmittedPlansModal } from './CustomerSubmittedPlansModal';
 import { AdminStorageManager } from '../../utils/adminStorage';
 
 interface CustomerDetailViewProps {
@@ -55,13 +56,16 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
   const [isChangeBalanceOpen, setIsChangeBalanceOpen] = useState(false);
   const [isGrantCouponOpen, setIsGrantCouponOpen] = useState(false);
   const [selectedGrantCouponId, setSelectedGrantCouponId] = useState('');
-  const [inspectingPlan, setInspectingPlan] = useState<SavedPlanRecord | null>(null);
+  const [isSubmittedPlansModalOpen, setIsSubmittedPlansModalOpen] = useState(false);
+  const [selectedSubmittedPlanId, setSelectedSubmittedPlanId] = useState<string | null>(null);
+  const [allSavedPlans, setAllSavedPlans] = useState<SavedPlanRecord[]>(() =>
+    AdminStorageManager.getSavedPlans()
+  );
 
   // Filter records for this customer
   const customerFollowUps = followUps.filter((f) => f.customerId === customer.id);
 
   // Customer's reported plans
-  const allSavedPlans = AdminStorageManager.getSavedPlans();
   const customerPlans = allSavedPlans.filter(
     (p) =>
       p.customerPhone === customer.phone ||
@@ -81,50 +85,13 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
   const custBalance = typeof customer.balance === 'number' ? customer.balance : 26800;
   const custCoupons = customer.coupons || [];
 
-  const handleConvertToIntent = () => {
+  const handleAssignConfirm = (business: string, operations: string, note: string) => {
     const updated: Customer = {
       ...customer,
-      status: '意向客户',
-      updatedAt: '08-18 16:30',
-    };
-    onUpdateCustomer(updated);
-    onAddFollowUp({
-      id: `fu_${Date.now()}`,
-      customerId: customer.id,
-      time: '2026-08-18 16:30:00',
-      method: '更新客户状态',
-      matter: `将客户【${customer.name}】状态变更为【意向客户】`,
-      result: '客户已有明确全屋智能方案设计意向',
-      type: '日志',
-      operator: '卫科帆',
-    });
-  };
-
-  const handleConvertToLost = () => {
-    const updated: Customer = {
-      ...customer,
-      status: '丢单客户',
-      followUpStatus: '丢单',
-      updatedAt: '08-18 16:30',
-    };
-    onUpdateCustomer(updated);
-    onAddFollowUp({
-      id: `fu_${Date.now()}`,
-      customerId: customer.id,
-      time: '2026-08-18 16:30:00',
-      method: '更新客户状态',
-      matter: `将客户【${customer.name}】标记为【丢单客户】`,
-      result: '客户暂时取消智能装修计划',
-      type: '日志',
-      operator: '卫科帆',
-    });
-  };
-
-  const handleAssignConfirm = (targetSalesperson: string, note: string) => {
-    const updated: Customer = {
-      ...customer,
-      salesperson: targetSalesperson,
-      assignedBusiness: targetSalesperson,
+      salesperson: business,
+      assignedBusiness: business,
+      assignedOperations: operations,
+      assignedTo: business,
       updatedAt: '08-18 16:30',
     };
     onUpdateCustomer(updated);
@@ -133,8 +100,8 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       customerId: customer.id,
       time: '2026-08-18 16:30:00',
       method: '指派客户',
-      matter: `卫科帆 将项目客户[${customer.projectName}] 指派给 ${targetSalesperson}${note ? ` (${note})` : ''}`,
-      result: '-',
+      matter: `将项目客户[${customer.projectName}] 指派给商务【${business}】、运营【${operations}】`,
+      result: note || '已完成人员指派',
       type: '日志',
       operator: '卫科帆',
     });
@@ -150,6 +117,53 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       onUpdateCustomer(updatedCustomer);
     }
     setIsGrantCouponOpen(false);
+  };
+
+  const handlePlanAudit = (plan: SavedPlanRecord, approved: boolean) => {
+    const actionLabel = approved ? '通过' : '驳回';
+    if (!window.confirm(`确定${actionLabel}方案【${plan.title}】吗？`)) return;
+    const now = new Date().toLocaleString('zh-CN', { hour12: false });
+    const updatedPlan: SavedPlanRecord = {
+      ...plan,
+      planAuditStatus: approved ? 'approved' : 'rejected',
+      planAuditFeedback: approved
+        ? '方案审核通过，可进入商务报价与履约流程。'
+        : '方案需修改后重新提交审核。',
+      planAuditReviewer: '卫科帆',
+      planAuditedAt: now,
+      orderStatus: approved ? 'reviewing' : 'contact_sales',
+      orderStatusLabel: approved ? '审核通过，待商务报价' : '审核驳回，待客户修改',
+      updatedAt: now,
+    };
+    AdminStorageManager.saveSingleSavedPlan(updatedPlan);
+    setAllSavedPlans(AdminStorageManager.getSavedPlans());
+  };
+
+  const handleApproveCustomer = () => {
+    if (customer.auditStatus === 'approved') return;
+    const now = new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16);
+    const updated: Customer = {
+      ...customer,
+      auditStatus: 'approved',
+      auditFeedback: '客户资料审核通过，已进入商务与运营跟进。',
+      auditTime: now,
+      auditorName: '卫科帆',
+      assignedBusiness: customer.assignedBusiness || customer.assignedTo || customer.salesperson || '王浩',
+      assignedOperations: customer.assignedOperations || '赵敏',
+      assignedTo: customer.assignedBusiness || customer.assignedTo || customer.salesperson || '王浩',
+      updatedAt: now,
+    };
+    onAddFollowUp({
+      id: `fu_approve_${Date.now()}`,
+      customerId: customer.id,
+      time: now,
+      method: '客户审核通过',
+      matter: `客户【${customer.name}】资料审核通过`,
+      result: '已进入商务与运营跟进',
+      type: '日志',
+      operator: '卫科帆',
+    });
+    onUpdateCustomer(updated);
   };
 
   return (
@@ -172,6 +186,21 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
         </div>
 
         <div className="flex items-center space-x-2 text-xs">
+          {customer.auditStatus === 'approved' ? (
+            <span className="flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-bold text-emerald-700">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              已审核通过
+            </span>
+          ) : (
+            <button
+              onClick={handleApproveCustomer}
+              className="flex items-center space-x-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>通过审核</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsChangeBalanceOpen(true)}
             className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg font-bold flex items-center space-x-1 cursor-pointer"
@@ -217,102 +246,32 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
         </div>
       </div>
 
-      {/* Customer Basic Info Summary Card (FEATURE 8: 展示客户信息) */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs text-xs space-y-4">
-        {/* Top title and badges */}
-        <div className="flex items-start justify-between pb-3 border-b border-slate-100">
-          <div className="space-y-1.5">
-            <div className="flex items-center space-x-3">
-              <span className="font-extrabold text-base text-slate-900">{customer.name}</span>
-              <span className="px-2 py-0.5 text-xs font-bold rounded bg-orange-50 text-orange-600 border border-orange-200">
-                {customer.status}
-              </span>
-              <span className="text-slate-400 text-xs">|</span>
-              <span className="font-bold text-slate-700 text-sm">{customer.projectName}</span>
-              <span className="px-2 py-0.5 text-xs font-medium rounded bg-slate-100 text-slate-600 border border-slate-200">
-                {customer.deliveryStatus}
-              </span>
-            </div>
-            <div className="flex items-center space-x-6 text-slate-500 text-[11px]">
-              <div>创建人: <span className="text-slate-700 font-medium">{customer.creator}</span></div>
-              <div>创建时间: <span className="text-slate-700 font-mono">{customer.createdAt}</span></div>
-              <div>更新时间: <span className="text-slate-700 font-mono">{customer.updatedAt}</span></div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            {/* Quick Balance Preview */}
-            <div className="px-3.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-right">
-              <span className="text-[10px] text-slate-400 block">客户已有余额</span>
-              <span className="font-black text-slate-900 font-mono text-sm">
-                ¥{custBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            {/* Quick Coupons Preview */}
-            <div className="px-3.5 py-1.5 bg-rose-50 border border-rose-200 rounded-xl text-right">
-              <span className="text-[10px] text-rose-500 block">已有优惠卷</span>
-              <span className="font-black text-rose-600 font-mono text-sm">
-                {custCoupons.length} 张
-              </span>
-            </div>
-          </div>
+      {/* Customer Personal Information */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 text-xs shadow-2xs">
+        <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+          <h2 className="text-sm font-extrabold text-slate-900">客户个人信息</h2>
+          {customer.auditStatus === 'approved' && (
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
+              已审核通过
+            </span>
+          )}
         </div>
-
-        {/* Info Grid (4 columns) */}
-        <div className="grid grid-cols-4 gap-y-3.5 gap-x-6 text-slate-600">
-          <div>
-            <span className="text-slate-400 block mb-0.5">客户电话:</span>
-            <span className="text-slate-900 font-mono font-bold">{customer.phone || '暂无'}</span>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-lg bg-slate-50 p-3">
+            <span className="block text-[10px] text-slate-400">客户名称</span>
+            <span className="mt-1 block font-bold text-slate-900">{customer.name}</span>
           </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">客户小区:</span>
-            <span className="text-slate-900 font-bold">{customer.community || customer.projectName || '万科翡翠公园'}</span>
+          <div className="rounded-lg bg-slate-50 p-3">
+            <span className="block text-[10px] text-slate-400">联系方式</span>
+            <span className="mt-1 block font-mono font-bold text-slate-900">{customer.phone || '暂无'}</span>
           </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">商务经理:</span>
-            <span className="text-blue-700 font-bold">{customer.assignedBusiness || customer.assignedTo || '王浩'}</span>
-          </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">对应运营:</span>
-            <span className="text-slate-900 font-bold">{customer.assignedOperations || '赵敏 (运营专员)'}</span>
-          </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">所属地区:</span>
-            <span className="text-slate-900 font-medium">{customer.region || '北京-北京-朝阳'}</span>
-          </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">详细地址:</span>
-            <span className="text-slate-900 truncate block font-medium" title={customer.detailAddress}>
-              {customer.detailAddress || '北京顺义区大槐树镇'}
+          <div className="rounded-lg bg-slate-50 p-3">
+            <span className="block text-[10px] text-slate-400">备注信息</span>
+            <span className="mt-1 block leading-relaxed text-slate-700">
+              {customer.remark || customer.customNotes || '暂无备注'}
             </span>
           </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">客户来源:</span>
-            <span className="text-slate-900 font-medium">{customer.source || '上门用户'}</span>
-          </div>
-
-          <div>
-            <span className="text-slate-400 block mb-0.5">价格等级:</span>
-            <span className="text-slate-900 font-medium">{customer.priceGrade || '普通级别'}</span>
-          </div>
         </div>
-
-        {/* Customer Custom Notes */}
-        {customer.customNotes && (
-          <div className="pt-3 border-t border-slate-100">
-            <span className="text-slate-500 font-bold block mb-1">客户手输记录 / 需求备忘:</span>
-            <p className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-slate-800 leading-relaxed font-medium">
-              {customer.customNotes}
-            </p>
-          </div>
-        )}
       </div>
 
       {/* 4 Core Tabs: 客户上报方案记录 / 客户已有余额 / 客户已有优惠券 / 跟进记录 */}
@@ -412,7 +371,13 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {customerPlans.map((plan) => (
+                {customerPlans.map((plan) => {
+                  const auditStatus =
+                    plan.planAuditStatus ||
+                    (plan.orderStatus === 'shipping' || plan.orderStatus === 'delivered'
+                      ? 'approved'
+                      : 'pending');
+                  return (
                   <div
                     key={plan.id}
                     className="p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 transition-all space-y-2.5"
@@ -425,6 +390,21 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
                         <p className="text-[11px] text-slate-500">
                           📍 {plan.communityName} · {plan.roomsCount} 空间
                         </p>
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold ${
+                            auditStatus === 'approved'
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                              : auditStatus === 'rejected'
+                                ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                : 'border-amber-200 bg-amber-50 text-amber-700'
+                          }`}
+                        >
+                          {auditStatus === 'approved'
+                            ? '方案已通过'
+                            : auditStatus === 'rejected'
+                              ? '方案已驳回'
+                              : '方案待审核'}
+                        </span>
                       </div>
 
                       <div className="text-right shrink-0">
@@ -441,20 +421,42 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/80 text-[11px]">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/80 text-[11px]">
                       <span className="text-slate-400 font-mono">
                         更新: {plan.updatedAt || plan.createdAt}
                       </span>
-                      <button
-                        onClick={() => setInspectingPlan(plan)}
-                        className="text-blue-600 font-bold hover:underline flex items-center space-x-0.5 cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>查看配置清单</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {auditStatus !== 'approved' && (
+                          <button
+                            onClick={() => handlePlanAudit(plan, true)}
+                            className="rounded-md bg-emerald-50 px-2 py-1 font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                          >
+                            审核通过
+                          </button>
+                        )}
+                        {auditStatus !== 'rejected' && (
+                          <button
+                            onClick={() => handlePlanAudit(plan, false)}
+                            className="rounded-md bg-rose-50 px-2 py-1 font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
+                          >
+                            驳回
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedSubmittedPlanId(plan.id);
+                            setIsSubmittedPlansModalOpen(true);
+                          }}
+                          className="text-blue-600 font-bold hover:underline flex items-center space-x-0.5 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>查看完整明细</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -589,7 +591,6 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
 
                     <div className="text-[10px] text-slate-500 space-y-0.5">
                       <p>门槛: {coupon.minSpend > 0 ? `满 ¥${coupon.minSpend} 可用` : '无门槛使用'}</p>
-                      <p>范围: {coupon.applicableScope || '全屋智能方案全品类'}</p>
                       <p className="font-mono text-slate-400">
                         有效期至: {coupon.validEndDate}
                       </p>
@@ -638,59 +639,18 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
         )}
       </div>
 
-      {/* --------------------------------------------------------------------------- */}
-      {/* Inspect Plan BOM Modal */}
-      {/* --------------------------------------------------------------------------- */}
-      {inspectingPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs select-none animate-fadeIn">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
-            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-extrabold text-sm">{inspectingPlan.title}</h3>
-                <p className="text-[11px] text-slate-400">
-                  {inspectingPlan.communityName} · {inspectingPlan.roomsCount} 空间 · 预估 ¥{inspectingPlan.totalCostTenThousand}万
-                </p>
-              </div>
-              <button
-                onClick={() => setInspectingPlan(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 space-y-3 text-xs overflow-y-auto flex-1">
-              <span className="font-extrabold text-slate-800 block">规划空间及配置:</span>
-              <div className="space-y-2">
-                {inspectingPlan.project?.rooms?.map((room, rIdx) => (
-                  <div key={rIdx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900">{room.name}</span>
-                      <span className="text-slate-500 font-mono text-[11px]">
-                        照明回路: {room.scheme?.lighting?.circuitsCount || 2}路
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 flex items-center space-x-3">
-                      <span>{room.scheme?.enableLighting ? '✅ 智能调光' : '❌ 无调光'}</span>
-                      <span>{room.scheme?.enableCurtain ? '✅ 电动窗帘' : '❌ 无窗帘'}</span>
-                      <span>{room.scheme?.enableOther ? '✅ 人体传感器' : '❌ 无传感器'}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-slate-50 border-t border-slate-200 shrink-0">
-              <button
-                onClick={() => setInspectingPlan(null)}
-                className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs cursor-pointer"
-              >
-                关闭
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CustomerSubmittedPlansModal
+        isOpen={isSubmittedPlansModalOpen}
+        customer={customer}
+        submittedPlans={customerPlans}
+        initialPlanId={selectedSubmittedPlanId}
+        onClose={() => setIsSubmittedPlansModalOpen(false)}
+        onUpdatePlan={(updated) => {
+          setAllSavedPlans((plans) =>
+            plans.map((plan) => (plan.id === updated.id ? updated : plan)),
+          );
+        }}
+      />
 
       {/* Change Balance Modal */}
       {isChangeBalanceOpen && (
@@ -791,7 +751,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       <AssignModal
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
-        customerName={customer.name}
+        customers={[customer]}
         onConfirm={handleAssignConfirm}
       />
     </div>

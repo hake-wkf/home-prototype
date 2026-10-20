@@ -43,7 +43,7 @@ interface PlanSummaryBOMProps {
   onPrevStep: () => void;
   onGoToSetup: () => void;
   onSaveAsTemplate?: () => void;
-  onSavePlan?: () => void;
+  onSaveRecord?: () => void;
   pageMode?: 'main' | 'editList';
   onPageModeChange?: (mode: 'main' | 'editList', deviceCount?: number) => void;
 }
@@ -67,7 +67,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   onPrevStep,
   onGoToSetup,
   onSaveAsTemplate,
-  onSavePlan,
+  onSaveRecord,
   pageMode: propPageMode,
   onPageModeChange,
 }) => {
@@ -1619,39 +1619,38 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
       {/* Bottom Sticky Floating Action Bar - Fixed layout without deformation */}
       <div className="sticky bottom-0 z-40 pt-1 -mx-3 -mb-3 sm:-mx-3.5 sm:-mb-3.5 px-3 sm:px-3.5 pb-2 bg-gradient-to-t from-slate-100 via-slate-100/95 to-transparent print:hidden">
         <div className="bg-white rounded-2xl p-2 px-3.5 sm:px-4 shadow-xl border border-slate-200/90 flex items-center justify-between gap-3">
-          {/* Left Buttons: 存为模板 & 保存方案 */}
-          <div className="flex items-center space-x-4 pl-1 shrink-0">
+          <div className="flex w-full items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsExportMenuOpen(true)}
+              className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 text-slate-700 hover:text-blue-600 active:scale-95 transition-all cursor-pointer"
+            >
+              <Share2 className="h-5 w-5" />
+              <span className="whitespace-nowrap text-[10px] font-bold">导出方案</span>
+            </button>
+
             {onSaveAsTemplate && (
               <button
                 type="button"
                 onClick={onSaveAsTemplate}
-                className="flex flex-col items-center justify-center text-slate-700 hover:text-amber-600 active:scale-95 transition-all cursor-pointer shrink-0 whitespace-nowrap"
+                className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 text-slate-700 hover:text-blue-600 active:scale-95 transition-all cursor-pointer"
               >
-                <FileStack className="w-5 h-5 mb-0.5" />
-                <span className="text-[10px] font-bold">存为模板</span>
+                <FileStack className="h-5 w-5" />
+                <span className="whitespace-nowrap text-[10px] font-bold">保存模板</span>
               </button>
             )}
 
-            {onSavePlan && (
+            {onSaveRecord && (
               <button
                 type="button"
-                onClick={onSavePlan}
-                className="flex flex-col items-center justify-center text-slate-700 hover:text-blue-600 active:scale-95 transition-all cursor-pointer shrink-0 whitespace-nowrap"
+                onClick={onSaveRecord}
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-sm font-extrabold text-white shadow-md transition-all hover:bg-blue-700 active:scale-[0.99] cursor-pointer whitespace-nowrap"
               >
-                <Save className="w-5 h-5 mb-0.5" />
-                <span className="text-[10px] font-bold">保存方案</span>
+                <Save className="h-5 w-5" />
+                <span>保存方案</span>
               </button>
             )}
           </div>
-
-          {/* Primary Action Pill Button: 导出方案 */}
-          <button
-            type="button"
-            onClick={() => setIsExportMenuOpen(true)}
-            className="flex-1 max-w-[200px] py-2.5 px-4 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md cursor-pointer flex items-center justify-center space-x-1.5 shrink-0 whitespace-nowrap"
-          >
-            <span>导出方案</span>
-          </button>
         </div>
       </div>
 
@@ -1755,23 +1754,10 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
         <div className="fixed inset-0 max-w-[412px] md:max-w-xl mx-auto z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl space-y-3 animate-scaleUp border border-slate-100 text-center">
             <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-100 pb-2">
-              选择方案导出方式
+              导出方案
             </h3>
 
             <div className="space-y-2">
-              {onSaveAsTemplate && (
-                <button
-                  onClick={() => {
-                    setIsExportMenuOpen(false);
-                    onSaveAsTemplate();
-                  }}
-                  className="w-full py-2.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl text-xs font-bold text-amber-900 flex items-center justify-center space-x-2 transition-colors cursor-pointer"
-                >
-                  <FileStack className="w-4 h-4 text-amber-600" />
-                  <span>保存为我的方案模板</span>
-                </button>
-              )}
-
               <button
                 onClick={() => {
                   handleCopyText();

@@ -19,18 +19,23 @@ import {
   ShieldCheck,
   Building2,
 } from 'lucide-react';
-import { Customer, CustomerStatus, PriceGrade, SavedPlanRecord } from '../../types';
+import { Customer, PriceGrade, SavedPlanRecord } from '../../types';
 import { NewCustomerModal } from './NewCustomerModal';
 import { AssignModal } from './AssignModal';
 import { ChangeBalanceModal } from './ChangeBalanceModal';
+import { CustomerSubmittedPlansModal } from './CustomerSubmittedPlansModal';
 import { AdminStorageManager } from '../../utils/adminStorage';
 
 interface MyCustomersProps {
   customers: Customer[];
   onSelectCustomer: (customer: Customer) => void;
   onAddCustomer: (customer: Customer) => void;
-  onBatchAssign: (targetSalesperson: string, selectedIds: string[]) => void;
-  onBatchChangeStatus: (status: CustomerStatus, selectedIds: string[]) => void;
+  onAssignPersonnel: (
+    business: string,
+    operations: string,
+    selectedIds: string[],
+    note: string,
+  ) => void;
   onBatchDelete: (selectedIds: string[]) => void;
   onToggleShare: (customerId: string) => void;
   onShowToast?: (msg: string) => void;
@@ -41,8 +46,7 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
   customers,
   onSelectCustomer,
   onAddCustomer,
-  onBatchAssign,
-  onBatchChangeStatus,
+  onAssignPersonnel,
   onBatchDelete,
   onToggleShare,
   onShowToast,
@@ -56,10 +60,11 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [isBatchMenuOpen, setIsBatchMenuOpen] = useState(false);
+  const [assignmentTargets, setAssignmentTargets] = useState<Customer[]>([]);
 
   // Balance Change Modal State
   const [balanceCustomer, setBalanceCustomer] = useState<Customer | null>(null);
+  const [submittedPlansCustomer, setSubmittedPlansCustomer] = useState<Customer | null>(null);
 
   // Saved Plans for matching customer reported records
   const [savedPlans, setSavedPlans] = useState<SavedPlanRecord[]>(() =>
@@ -206,6 +211,20 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center space-x-2 text-xs">
+            {selectedIds.length > 0 && (
+              <button
+                onClick={() => {
+                  setAssignmentTargets(
+                    myCustomerList.filter((customer) => selectedIds.includes(customer.id)),
+                  );
+                  setIsAssignModalOpen(true);
+                }}
+                className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 font-bold text-blue-700 hover:bg-blue-100 cursor-pointer"
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                <span>批量指派</span>
+              </button>
+            )}
             <button
               onClick={() => setIsNewModalOpen(true)}
               className="flex items-center space-x-1 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all cursor-pointer"
@@ -243,7 +262,7 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
                 <th className="py-3 px-4 font-bold text-slate-800">客户已有余额</th>
                 <th className="py-3 px-4 font-bold text-slate-800">客户已有优惠卷</th>
                 <th className="py-3 px-4 font-bold text-slate-800">客户上报方案记录</th>
-                <th className="py-3 px-4 text-center w-28">操作</th>
+                <th className="py-3 px-4 text-center w-52">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -336,32 +355,47 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
                         </div>
                       </td>
 
-                      {/* 客户上报方案记录 (FEATURE 8) */}
+                      {/* 客户上报方案记录 */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-1 font-bold text-slate-800">
+                        <button
+                          onClick={() => setSubmittedPlansCustomer(cust)}
+                          className="group w-full min-w-[150px] rounded-lg border border-blue-100 bg-blue-50/60 px-2.5 py-2 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-1 font-bold text-slate-800">
                             <FolderHeart className="w-3.5 h-3.5 text-blue-600" />
                             <span className="font-mono text-sm">{reportedPlans.length}</span>
                             <span className="text-xs text-slate-500 font-normal">套方案</span>
+                            <ArrowRight className="ml-auto h-3.5 w-3.5 text-blue-300 group-hover:text-blue-600" />
                           </div>
                           {reportedPlans.length > 0 ? (
-                            <span className="text-[10px] text-slate-400 block truncate max-w-[140px]" title={reportedPlans[0].title}>
-                              最新: {reportedPlans[0].title}
+                            <span className="mt-1 block truncate text-[10px] font-semibold text-blue-600">
+                              查看完整明细
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400 block">暂无上报记录</span>
+                            <span className="mt-1 block text-[10px] text-slate-400">暂无上报记录</span>
                           )}
-                        </div>
+                        </button>
                       </td>
 
                       {/* 操作 */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => onSelectCustomer(cust)}
-                          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                        >
-                          查看详情
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => onSelectCustomer(cust)}
+                            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-slate-800 cursor-pointer"
+                          >
+                            查看详情
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAssignmentTargets([cust]);
+                              setIsAssignModalOpen(true);
+                            }}
+                            className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-100 cursor-pointer"
+                          >
+                            指派人员
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -395,11 +429,20 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
       {/* Assign Modal */}
       <AssignModal
         isOpen={isAssignModalOpen}
-        onClose={() => setIsAssignModalOpen(false)}
-        selectedCount={selectedIds.length}
-        onConfirm={(target) => {
-          onBatchAssign(target, selectedIds);
+        customers={assignmentTargets}
+        onClose={() => {
           setIsAssignModalOpen(false);
+          setAssignmentTargets([]);
+        }}
+        onConfirm={(business, operations, note) => {
+          onAssignPersonnel(
+            business,
+            operations,
+            assignmentTargets.map((customer) => customer.id),
+            note,
+          );
+          setIsAssignModalOpen(false);
+          setAssignmentTargets([]);
           setSelectedIds([]);
         }}
       />
@@ -416,6 +459,26 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
           }}
         />
       )}
+
+      <CustomerSubmittedPlansModal
+        isOpen={!!submittedPlansCustomer}
+        customer={submittedPlansCustomer}
+        submittedPlans={
+          submittedPlansCustomer
+            ? savedPlans.filter(
+                (plan) =>
+                  plan.customerPhone === submittedPlansCustomer.phone ||
+                  plan.customerName === submittedPlansCustomer.name
+              )
+            : []
+        }
+        onClose={() => setSubmittedPlansCustomer(null)}
+        onUpdatePlan={(updated) => {
+          setSavedPlans((plans) =>
+            plans.map((plan) => (plan.id === updated.id ? updated : plan)),
+          );
+        }}
+      />
     </div>
   );
 };

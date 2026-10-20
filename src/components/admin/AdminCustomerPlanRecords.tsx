@@ -12,10 +12,22 @@ import {
   X,
   Clock,
   CheckCircle2,
+  Check,
+  XCircle,
   Bot,
   FileText,
 } from 'lucide-react';
 import { SavedPlanRecord, PlanChatMessage, Customer } from '../../types';
+
+type PlanAuditStatus = 'pending' | 'approved' | 'rejected';
+
+const getPlanAuditStatus = (plan: SavedPlanRecord): PlanAuditStatus => {
+  if (plan.planAuditStatus) return plan.planAuditStatus;
+  if (plan.orderStatus === 'shipping' || plan.orderStatus === 'delivered' || plan.orderStatus === 'completed') {
+    return 'approved';
+  }
+  return 'pending';
+};
 
 interface AdminCustomerPlanRecordsProps {
   plans: SavedPlanRecord[];
@@ -37,6 +49,10 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
   const [activeChatPlan, setActiveChatPlan] = useState<SavedPlanRecord | null>(null);
   const [activeBomPlan, setActiveBomPlan] = useState<SavedPlanRecord | null>(null);
   const [activeLogisticsPlan, setActiveLogisticsPlan] = useState<SavedPlanRecord | null>(null);
+  const [auditFilter, setAuditFilter] = useState<'all' | PlanAuditStatus>('pending');
+  const [auditPlan, setAuditPlan] = useState<SavedPlanRecord | null>(null);
+  const [auditAction, setAuditAction] = useState<'approve' | 'reject'>('approve');
+  const [auditFeedback, setAuditFeedback] = useState('');
 
   // New Chat Message Input State (in Chat Drawer)
   const [newChatContent, setNewChatContent] = useState('');
@@ -48,12 +64,16 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
     const inFulfillment = plans.filter(
       (p) => p.orderStatus === 'shipping' || p.orderStatus === 'delivered' || p.orderStatus === 'reviewing'
     ).length;
-    return { total, withChat, inFulfillment };
+    const pendingAudit = plans.filter((p) => getPlanAuditStatus(p) === 'pending').length;
+    return { total, withChat, inFulfillment, pendingAudit };
   }, [plans]);
 
   // Filtered plans: strictly 客户手机号; 小区名称搜索 (不存在状态筛选)
   const filteredPlans = useMemo(() => {
     return plans.filter((plan) => {
+      if (auditFilter !== 'all' && getPlanAuditStatus(plan) !== auditFilter) {
+        return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const phoneStr = (plan.customerPhone || '17696180841').toLowerCase();
@@ -65,7 +85,73 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
       }
       return true;
     });
-  }, [plans, searchQuery]);
+  }, [auditFilter, plans, searchQuery]);
+
+  const openAuditModal = (plan: SavedPlanRecord, action: 'approve' | 'reject') => {
+    setAuditPlan(plan);
+    setAuditAction(action);
+    setAuditFeedback(
+      action === 'approve'
+        ? '方案清单、点位与预算已核验通过，可进入商务报价与履约流程。'
+        : '方案信息需补充，请客户确认后重新提交审核。',
+    );
+  };
+
+  const handleConfirmAudit = () => {
+    if (!auditPlan) return;
+    const now = new Date().toLocaleString('zh-CN', { hour12: false });
+    const approved = auditAction === 'approve';
+    const timeline = auditPlan.logisticsInfo?.timeline || [
+      {
+        status: 'contact_sales',
+        stepNumber: 1,
+        title: '1. 客户提交方案',
+        description: '客户已提交方案与设备清单',
+        time: auditPlan.createdAt,
+        done: true,
+      },
+    ];
+    const hasAuditNode = timeline.some((node) => node.stepNumber === 2);
+    const nextTimeline = hasAuditNode
+      ? timeline.map((node) =>
+          node.stepNumber === 2
+            ? {
+                ...node,
+                title: approved ? '2. 方案审核通过' : '2. 方案审核驳回',
+                description: auditFeedback,
+                time: now,
+                done: true,
+                active: false,
+              }
+            : node,
+        )
+      : [
+          ...timeline,
+          {
+            status: 'reviewing',
+            stepNumber: 2,
+            title: approved ? '2. 方案审核通过' : '2. 方案审核驳回',
+            description: auditFeedback,
+            time: now,
+            done: true,
+            active: false,
+          },
+        ];
+
+    onUpdatePlan({
+      ...auditPlan,
+      planAuditStatus: approved ? 'approved' : 'rejected',
+      planAuditFeedback: auditFeedback,
+      planAuditReviewer: '卫科帆',
+      planAuditedAt: now,
+      orderStatus: approved ? 'reviewing' : 'contact_sales',
+      orderStatusLabel: approved ? '审核通过，待商务报价' : '审核驳回，待客户修改',
+      logisticsInfo: auditPlan.logisticsInfo
+        ? { ...auditPlan.logisticsInfo, timeline: nextTimeline }
+        : auditPlan.logisticsInfo,
+    });
+    setAuditPlan(null);
+  };
 
   // Send message in chat drawer (no sender role dropdown)
   const handleSendMessage = (e: React.FormEvent) => {
@@ -120,7 +206,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
         </div>
 
         {/* 3 Metric Cards (Removed 累计方案总产值) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-slate-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-5 pt-5 border-t border-slate-100">
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div className="text-xs font-semibold text-slate-500">方案记录总数</div>
             <div className="text-2xl font-black text-slate-900 mt-1 font-mono">{stats.total} 份</div>
@@ -138,6 +224,13 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
               <span>履约发货中方案</span>
             </div>
             <div className="text-2xl font-black text-emerald-900 mt-1 font-mono">{stats.inFulfillment} 份</div>
+          </div>
+          <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-100">
+            <div className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+              <Clock className="w-4 h-4" />
+              <span>待审核方案</span>
+            </div>
+            <div className="text-2xl font-black text-amber-900 mt-1 font-mono">{stats.pendingAudit} 份</div>
           </div>
         </div>
       </div>
@@ -164,6 +257,27 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
           )}
         </div>
 
+        <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
+          {[
+            { key: 'pending' as const, label: `待审核 (${stats.pendingAudit})` },
+            { key: 'approved' as const, label: '已通过' },
+            { key: 'rejected' as const, label: '已驳回' },
+            { key: 'all' as const, label: '全部' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setAuditFilter(tab.key)}
+              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
+                auditFilter === tab.key
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Result Count Badge */}
         <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
           <span>共筛选出 <strong className="text-slate-900 font-mono text-sm">{filteredPlans.length}</strong> 份客户方案记录</span>
@@ -180,15 +294,16 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                 <th className="py-4 px-5 w-52">所属客户</th>
                 <th className="py-4 px-5 w-36 text-right">造价预估</th>
                 <th className="py-4 px-5 w-36">空间 / 设备</th>
+                <th className="py-4 px-5 w-40">方案审核</th>
                 <th className="py-4 px-5 w-72">客户对话沟通记录</th>
                 <th className="py-4 px-5 w-44">履约与物流进度</th>
-                <th className="py-4 px-5 w-36 text-center">操作</th>
+                <th className="py-4 px-5 w-48 text-center">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredPlans.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-slate-400">
+                  <td colSpan={8} className="py-16 text-center text-slate-400">
                     <FolderKanban className="w-12 h-12 text-slate-300 mx-auto mb-2 opacity-60" />
                     <p className="font-bold text-base text-slate-600">未找到符合条件的方案记录</p>
                     <p className="text-xs text-slate-400 mt-1">请输入正确的客户手机号或小区名称搜索</p>
@@ -198,6 +313,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                 filteredPlans.map((plan) => {
                   const chatCount = (plan.chatHistory || []).length;
                   const lastMessage = chatCount > 0 ? plan.chatHistory![chatCount - 1] : null;
+                  const planAuditStatus = getPlanAuditStatus(plan);
 
                   return (
                     <tr
@@ -264,7 +380,38 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                         </div>
                       </td>
 
-                      {/* 5. 客户对话沟通记录 (Prominent & Clear) */}
+                      {/* 5. 方案审核 */}
+                      <td className="py-4 px-5">
+                        <div className="space-y-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${
+                              planAuditStatus === 'approved'
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : planAuditStatus === 'rejected'
+                                  ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                  : 'border-amber-200 bg-amber-50 text-amber-700'
+                            }`}
+                          >
+                            {planAuditStatus === 'approved' ? (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            ) : planAuditStatus === 'rejected' ? (
+                              <XCircle className="w-3.5 h-3.5" />
+                            ) : (
+                              <Clock className="w-3.5 h-3.5" />
+                            )}
+                            {planAuditStatus === 'approved'
+                              ? '审核通过'
+                              : planAuditStatus === 'rejected'
+                                ? '审核驳回'
+                                : '待审核'}
+                          </span>
+                          <p className="max-w-36 truncate text-[11px] text-slate-500" title={plan.planAuditFeedback}>
+                            {plan.planAuditFeedback || '等待商务审核方案与预算'}
+                          </p>
+                        </div>
+                      </td>
+
+                      {/* 6. 客户对话沟通记录 (Prominent & Clear) */}
                       <td className="py-4 px-5" onClick={(e) => { e.stopPropagation(); setActiveChatPlan(plan); }}>
                         <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-blue-500 hover:bg-blue-50/60 transition-all">
                           <div className="flex items-center justify-between">
@@ -292,7 +439,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                         </div>
                       </td>
 
-                      {/* 6. 履约与物流进度 (No SF tracking string) */}
+                      {/* 7. 履约与物流进度 (No SF tracking string) */}
                       <td className="py-4 px-5" onClick={(e) => { e.stopPropagation(); setActiveLogisticsPlan(plan); }}>
                         <div>
                           {plan.orderStatus === 'delivered' ? (
@@ -318,7 +465,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                         </div>
                       </td>
 
-                      {/* 7. 操作 (NO delete button; NO Convert to Template button) */}
+                      {/* 8. 操作 */}
                       <td className="py-4 px-5 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center space-x-2">
                           <button
@@ -342,6 +489,24 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                           >
                             <Truck className="w-4 h-4" />
                           </button>
+                          {planAuditStatus !== 'approved' && (
+                            <button
+                              onClick={() => openAuditModal(plan, 'approve')}
+                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                              title="审核通过"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          )}
+                          {planAuditStatus !== 'rejected' && (
+                            <button
+                              onClick={() => openAuditModal(plan, 'reject')}
+                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="审核驳回"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -352,6 +517,83 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
           </table>
         </div>
       </div>
+
+      {/* Plan Audit Modal */}
+      {auditPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between bg-slate-900 px-5 py-4 text-white">
+              <div className="flex items-center gap-2">
+                {auditAction === 'approve' ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-rose-400" />
+                )}
+                <div>
+                  <h3 className="text-sm font-extrabold">
+                    {auditAction === 'approve' ? '审核通过方案' : '驳回方案审核'}
+                  </h3>
+                  <p className="mt-0.5 text-[10px] text-slate-400">{auditPlan.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAuditPlan(null)}
+                className="rounded-lg p-1 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5 text-xs">
+              <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div>
+                  <span className="text-[10px] text-slate-400">客户</span>
+                  <p className="mt-1 font-bold text-slate-900">{auditPlan.customerName || '未登记客户'}</p>
+                  <p className="mt-0.5 font-mono text-[10px] text-slate-500">{auditPlan.customerPhone || '-'}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400">方案信息</span>
+                  <p className="mt-1 font-bold text-slate-900">{auditPlan.communityName}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-500">
+                    {auditPlan.roomsCount} 个空间 · {auditPlan.deviceCount} 件设备
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-bold text-slate-700">
+                  审核意见
+                </label>
+                <textarea
+                  rows={4}
+                  value={auditFeedback}
+                  onChange={(event) => setAuditFeedback(event.target.value)}
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-800 outline-none focus:border-slate-900 focus:bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 border-t border-slate-200 bg-slate-50 p-4">
+              <button
+                onClick={() => setAuditPlan(null)}
+                className="flex-1 rounded-xl border border-slate-300 bg-white py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmAudit}
+                className={`flex-1 rounded-xl py-2 text-xs font-bold text-white cursor-pointer ${
+                  auditAction === 'approve'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-rose-600 hover:bg-rose-700'
+                }`}
+              >
+                {auditAction === 'approve' ? '确认通过' : '确认驳回'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4. Customer Chat History Drawer (Full conversation viewer & reply) */}
       {activeChatPlan && (
@@ -587,12 +829,12 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
       {/* 6. Logistics Timeline Modal */}
       {activeLogisticsPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-200">
             <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Truck className="w-5 h-5 text-emerald-400" />
                 <div>
-                  <h3 className="font-bold text-sm">履约发货与进度明细</h3>
+                  <h3 className="font-bold text-sm">完整方案跟踪记录</h3>
                   <p className="text-xs text-slate-400">方案: {activeLogisticsPlan.title}</p>
                 </div>
               </div>
@@ -612,25 +854,49 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                 <div className="text-blue-600 text-xs font-mono">
                   履约状态: {activeLogisticsPlan.orderStatus === 'shipping' ? '已发货' : (activeLogisticsPlan.orderStatusLabel || activeLogisticsPlan.status).replace(/\(顺丰单号:[^)]*\)/g, '').trim()}
                 </div>
+                <div className="text-blue-600 text-xs">
+                  方案审核: {getPlanAuditStatus(activeLogisticsPlan) === 'approved' ? '已通过' : getPlanAuditStatus(activeLogisticsPlan) === 'rejected' ? '已驳回' : '待审核'}
+                  {activeLogisticsPlan.planAuditFeedback ? ` · ${activeLogisticsPlan.planAuditFeedback}` : ''}
+                </div>
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-900 mb-3">履约进度时间轴</h4>
-                <div className="space-y-3 relative pl-4 border-l-2 border-slate-200 ml-2">
-                  {(activeLogisticsPlan.logisticsInfo?.timeline || [
-                    { stepNumber: 1, title: '1. 客户提交采购需求', time: activeLogisticsPlan.createdAt || '已提交', done: true },
-                    { stepNumber: 2, title: '2. 商务审核中 · 核验配置报价', time: '审核中', done: true },
-                    { stepNumber: 3, title: '3. 设备已出库发货', time: '已装车出库', done: activeLogisticsPlan.orderStatus === 'shipping' || activeLogisticsPlan.orderStatus === 'delivered' },
-                    { stepNumber: 4, title: '4. 签收与上门联调', time: '待验收', done: activeLogisticsPlan.orderStatus === 'delivered' },
-                  ]).map((t, i) => (
-                    <div key={i} className="relative">
-                      <div className={`absolute -left-[21px] top-0.5 w-3 h-3 rounded-full border-2 bg-white ${
-                        t.done ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300'
-                      }`} />
-                      <div className="font-bold text-slate-800 text-sm">{t.title}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">{t.time}</div>
-                    </div>
-                  ))}
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="font-bold text-slate-900">跟踪记录表格</h4>
+                  <span className="text-[10px] text-slate-400">共 {(activeLogisticsPlan.logisticsInfo?.timeline || []).length || 4} 个节点</span>
+                </div>
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full min-w-[620px] text-left text-xs">
+                    <thead className="bg-slate-100 text-slate-600">
+                      <tr>
+                        <th className="px-3 py-2.5 font-bold">节点</th>
+                        <th className="px-3 py-2.5 font-bold">状态</th>
+                        <th className="px-3 py-2.5 font-bold">时间</th>
+                        <th className="px-3 py-2.5 font-bold">说明</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {(activeLogisticsPlan.logisticsInfo?.timeline || [
+                        { stepNumber: 1, title: '1. 客户提交采购需求', description: '客户已提交完整方案与清单', time: activeLogisticsPlan.createdAt || '已提交', done: true },
+                        { stepNumber: 2, title: '2. 方案与商务审核', description: activeLogisticsPlan.planAuditFeedback || '后台审核方案、预算和客户信息', time: activeLogisticsPlan.planAuditedAt || '处理中', done: getPlanAuditStatus(activeLogisticsPlan) !== 'pending' },
+                        { stepNumber: 3, title: '3. 设备出库发货', description: '仓库配货后交由承运商配送', time: activeLogisticsPlan.logisticsInfo?.shippingDate || '待发货', done: activeLogisticsPlan.orderStatus === 'shipping' || activeLogisticsPlan.orderStatus === 'delivered' },
+                        { stepNumber: 4, title: '4. 签收与上门联调', description: '客户验收设备并完成现场调试', time: activeLogisticsPlan.logisticsInfo?.deliveredDate || '待验收', done: activeLogisticsPlan.orderStatus === 'delivered' },
+                      ]).map((node, index) => (
+                        <tr key={index} className="hover:bg-slate-50">
+                          <td className="px-3 py-3 font-bold text-slate-800">{node.title}</td>
+                          <td className="px-3 py-3">
+                            <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold ${
+                              node.done ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {node.done ? '已完成' : '待处理'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 font-mono text-[10px] text-slate-500">{node.time}</td>
+                          <td className="px-3 py-3 leading-relaxed text-slate-500">{node.description || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

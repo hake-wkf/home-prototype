@@ -52,7 +52,6 @@ import {
   RoomItem,
   Customer,
   FollowUpRecord,
-  CustomerStatus,
   SavedPlanRecord,
   PlanTemplate,
 } from '../types';
@@ -186,14 +185,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     showToast('跟进记录已成功添加');
   };
 
-  const handleBatchAssign = (targetSalesperson: string, selectedIds: string[]) => {
+  const handleAssignPersonnel = (
+    assignedBusiness: string,
+    assignedOperations: string,
+    selectedIds: string[],
+    note: string,
+  ) => {
+    const now = new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16);
     const updated = customers.map((c) => {
       if (selectedIds.includes(c.id)) {
         return {
           ...c,
-          salesperson: targetSalesperson,
+          salesperson: assignedBusiness,
+          assignedBusiness,
+          assignedOperations,
+          assignedTo: assignedBusiness,
           isPool: false,
-          updatedAt: '08-18 16:30',
+          updatedAt: now,
         };
       }
       return c;
@@ -206,10 +214,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
       return {
         id: `fu_${Date.now()}_${idx}`,
         customerId: id,
-        time: '2026-08-18 16:30:00',
+        time: now,
         method: '指派客户',
-        matter: `卫科帆 将项目客户[${cust?.projectName || '智能方案'}] 指派给 ${targetSalesperson}`,
-        result: '-',
+        matter: `将项目客户[${cust?.projectName || '智能方案'}] 指派给商务【${assignedBusiness}】、运营【${assignedOperations}】`,
+        result: note || '已完成人员指派',
         type: '日志',
         operator: '卫科帆',
       };
@@ -218,23 +226,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     setFollowUps(updatedFu);
     AdminStorageManager.saveFollowUps(updatedFu);
 
-    showToast(`已成功将 ${selectedIds.length} 位客户指派给 ${targetSalesperson}`);
-  };
-
-  const handleBatchChangeStatus = (status: CustomerStatus, selectedIds: string[]) => {
-    const updated = customers.map((c) => {
-      if (selectedIds.includes(c.id)) {
-        return {
-          ...c,
-          status,
-          updatedAt: '08-18 16:30',
-        };
-      }
-      return c;
-    });
-    setCustomers(updated);
-    AdminStorageManager.saveCustomers(updated);
-    showToast(`已将 ${selectedIds.length} 位客户状态批量变更为【${status}】`);
+    showToast(
+      `已将 ${selectedIds.length} 位客户指派给商务【${assignedBusiness}】、运营【${assignedOperations}】`,
+    );
   };
 
   const handleBatchDelete = (selectedIds: string[]) => {
@@ -972,8 +966,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
               customers={customers}
               onSelectCustomer={handleSelectCustomer}
               onAddCustomer={handleAddCustomer}
-              onBatchAssign={handleBatchAssign}
-              onBatchChangeStatus={handleBatchChangeStatus}
+              onAssignPersonnel={handleAssignPersonnel}
               onBatchDelete={handleBatchDelete}
               onToggleShare={handleToggleShare}
               onShowToast={showToast}

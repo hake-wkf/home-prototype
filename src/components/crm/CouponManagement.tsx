@@ -43,7 +43,6 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
   const [minSpend, setMinSpend] = useState('20000');
   const [startDate, setStartDate] = useState('2026-08-01');
   const [endDate, setEndDate] = useState('2026-12-31');
-  const [scope, setScope] = useState('全屋智能方案 / 智能照明 / 窗帘电机与全品类设备');
   const [code, setCode] = useState('CPN' + Math.floor(1000 + Math.random() * 9000));
   const [description, setDescription] = useState('签约全屋智能方案满额立减，可与特惠折扣叠加');
 
@@ -57,8 +56,7 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
       const q = keyword.toLowerCase().trim();
       return (
         c.name.toLowerCase().includes(q) ||
-        (c.code && c.code.toLowerCase().includes(q)) ||
-        (c.applicableScope && c.applicableScope.toLowerCase().includes(q))
+        (c.code && c.code.toLowerCase().includes(q))
       );
     }
     return true;
@@ -77,7 +75,6 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
       validStartDate: startDate,
       validEndDate: endDate,
       status: 'usable',
-      applicableScope: scope.trim(),
       code: code.trim() || 'CPN' + Math.floor(1000 + Math.random() * 9000),
       description: description.trim(),
       createdAt: `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`,
@@ -230,12 +227,8 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
                 </div>
               </div>
 
-              {/* Rules & Dates */}
+              {/* Dates */}
               <div className="space-y-1 text-[11px] text-slate-500">
-                <p className="truncate">
-                  <span className="text-slate-400">适用: </span>
-                  {c.applicableScope || '全屋智能方案全品类'}
-                </p>
                 <p className="font-mono text-[10px] text-slate-400">
                   有效期限: {c.validStartDate} ~ {c.validEndDate}
                 </p>
@@ -368,18 +361,6 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
 
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-800 mb-1">
-                  适用范围说明
-                </label>
-                <input
-                  type="text"
-                  value={scope}
-                  onChange={(e) => setScope(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-slate-800 mb-1">
                   使用规则与备注
                 </label>
                 <textarea
@@ -388,8 +369,6 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 outline-none resize-none leading-relaxed"
                 />
-              </div>
-
               </div>
 
               <div className="pt-2 flex space-x-2.5">

@@ -327,6 +327,11 @@ export interface SavedPlanRecord {
   // Order & Logistics Tracking
   orderStatus?: OrderShippingStatus;
   orderStatusLabel?: string;
+  planAuditStatus?: 'pending' | 'approved' | 'rejected';
+  planAuditFeedback?: string;
+  planAuditReviewer?: string;
+  planAuditedAt?: string;
+  erpAuditedAt?: string;
   contactedBusinessAt?: string;
   logisticsInfo?: ShippingLogisticsInfo;
   isCustomTemplate?: boolean;
@@ -534,4 +539,3 @@ export interface FloorPlanDesignProject {
   activeLayerId: string;
   layers: FloorDrawingLayer[];
 }
-

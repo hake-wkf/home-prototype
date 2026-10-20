@@ -21,10 +21,10 @@ import { AdminStorageManager } from './utils/adminStorage';
 import { AppBottomNav, AppTabType } from './components/app/AppBottomNav';
 import { LoginPageView } from './components/app/LoginPageView';
 import { MerchantApplyPage, ApplyFormData } from './components/app/MerchantApplyPage';
-import { SaveCurrentPlanModal } from './components/app/SaveCurrentPlanModal';
 import { SavedPlansView } from './components/app/SavedPlansView';
 import { PlanTemplatesView } from './components/app/PlanTemplatesView';
 import { UserProfileView } from './components/app/UserProfileView';
+import { generateDefaultChatHistory } from './data/planChatHistoryData';
 import {
   Home,
   RotateCcw,
@@ -73,7 +73,7 @@ export default function App() {
   const [planTemplates, setPlanTemplates] = useState<PlanTemplate[]>(() =>
     AdminStorageManager.getPlanTemplates()
   );
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [appToast, setAppToast] = useState<string | null>(null);
 
   // Sync to local storage
   useEffect(() => {
@@ -233,6 +233,50 @@ export default function App() {
 
   const costSummary = calculateProjectCost(project);
 
+  const showAppToast = (message: string) => {
+    setAppToast(message);
+    window.setTimeout(() => setAppToast(null), 2600);
+  };
+
+  const buildCurrentPlanRecord = (): SavedPlanRecord => {
+    const nowTime = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
+    const deviceCount = project.rooms.reduce((total, room) => {
+      let count = 0;
+      if (room.scheme.enableLighting) count += room.scheme.lighting?.circuitsCount || 2;
+      if (room.scheme.enableCurtain) count += 1;
+      if (room.scheme.enableOther) count += 2;
+      return total + count;
+    }, 0);
+    const record: SavedPlanRecord = {
+      id: `plan_rec_${Date.now()}`,
+      title: `${communityName || '全屋智能'} · ${rooms.length}空间全屋智能方案`,
+      communityName: communityName || '智家全屋定制',
+      cityName: project.cityName || '北京',
+      createdAt: nowTime,
+      updatedAt: nowTime,
+      presetId: project.selectedPresetId,
+      roomsCount: rooms.length,
+      totalCostTenThousand: costSummary.totalCostTenThousand,
+      totalCostYuan: Math.round(costSummary.totalCostTenThousand * 10000),
+      deviceCount,
+      tags: [],
+      notes: `包含 ${rooms.map((room) => room.name).join('、')} 共 ${rooms.length} 个空间的智能设备规划与预算。`,
+      status: '草稿',
+      orderStatus: 'contact_sales',
+      orderStatusLabel: '待对接',
+      project: JSON.parse(JSON.stringify(project)),
+    };
+    record.chatHistory = generateDefaultChatHistory(record);
+    return record;
+  };
+
+  const handleSaveCurrentPlan = () => {
+    const plan = buildCurrentPlanRecord();
+    setSavedPlans((prev) => [plan, ...prev]);
+    setAppTab('records');
+    showAppToast('方案已保存到“我的记录”');
+  };
+
   // Template and Record Integration Handlers
   const handleApplyTemplate = (template: PlanTemplate) => {
     setCommunityName(template.title);
@@ -290,7 +334,7 @@ export default function App() {
       rooms: JSON.parse(JSON.stringify(rooms)),
     };
     setPlanTemplates((prev) => [newTemplate, ...prev]);
-    alert(`成功将【${communityName || '当前方案'}】保存为专属方案模板！可随时在“我的方案模板库”中查看和套用。`);
+    showAppToast('已保存为方案模板，可在“我的模板”中查看');
   };
 
   const handleSaveRecordAsTemplate = (plan: SavedPlanRecord) => {
@@ -567,7 +611,7 @@ export default function App() {
                           onPrevStep={() => setCurrentStep('ai_chat')}
                           onGoToSetup={() => setCurrentStep('setup')}
                           onSaveAsTemplate={handleSaveCurrentAsTemplate}
-                          onSavePlan={() => setIsSaveModalOpen(true)}
+                          onSaveRecord={handleSaveCurrentPlan}
                           pageMode={bomPageMode}
                           onPageModeChange={(mode, count) => {
                             setBomPageMode(mode);
@@ -601,7 +645,6 @@ export default function App() {
                     onClonePlan={handleClonePlan}
                     onUpdatePlan={handleUpdatePlan}
                     onSaveAsTemplate={handleSaveRecordAsTemplate}
-                    onOpenSaveModal={() => setIsSaveModalOpen(true)}
                     onGoToDesign={() => {
                       setAppTab('design');
                       setCurrentStep('rooms');
@@ -640,14 +683,11 @@ export default function App() {
         )}
       </div>
 
-      {/* Save Current Plan Modal */}
-      <SaveCurrentPlanModal
-        isOpen={isSaveModalOpen}
-        onClose={() => setIsSaveModalOpen(false)}
-        project={project}
-        totalCostTenThousand={costSummary.totalCostTenThousand}
-        onSavePlan={handleSavePlanRecord}
-      />
+      {appToast && (
+        <div className="fixed left-1/2 top-16 z-[80] -translate-x-1/2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xl">
+          {appToast}
+        </div>
+      )}
     </div>
   );
 }
