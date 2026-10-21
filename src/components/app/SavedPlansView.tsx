@@ -272,11 +272,17 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
   const selectedOrderCoupon = availableOrderCoupons.find(
     (coupon) => coupon.id === selectedCouponId
   );
-  const orderSubtotalYuan =
+  const schemePriceYuan =
+    contactSalesPlan?.schemePriceYuan ??
     (contactSalesPlan?.totalCostYuan || contactSalesPlan?.totalCostTenThousand || 0) *
     (contactSalesPlan?.totalCostYuan ? 1 : 10000);
+  const dealerPriceYuan =
+    contactSalesPlan?.dealerPriceYuan ?? Math.round(schemePriceYuan * 0.8);
+  const priceDifferenceYuan =
+    contactSalesPlan?.priceDifferenceYuan ?? schemePriceYuan - dealerPriceYuan;
+  const orderSubtotalYuan = dealerPriceYuan;
   const couponEligibleYuan =
-    contactSalesPlan?.couponEligibleAmount ?? orderSubtotalYuan;
+    Math.min(contactSalesPlan?.couponEligibleAmount ?? orderSubtotalYuan, orderSubtotalYuan);
   const externalAmountYuan = contactSalesPlan?.externalAmount || 0;
   const orderShippingFee = contactSalesPlan?.shippingFee || 0;
   const couponPreviewAmount = selectedOrderCoupon
@@ -435,7 +441,12 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       return;
     }
     const originalAmountYuan =
-      contactSalesPlan.totalCostYuan || contactSalesPlan.totalCostTenThousand * 10000;
+      contactSalesPlan.dealerPriceYuan ||
+      Math.round(
+        (contactSalesPlan.schemePriceYuan ||
+          contactSalesPlan.totalCostYuan ||
+          contactSalesPlan.totalCostTenThousand * 10000) * 0.8,
+      );
     const eligibleCouponAmount =
       contactSalesPlan.couponEligibleAmount ?? originalAmountYuan;
     const couponDiscountAmount = selectedCoupon
@@ -1280,6 +1291,29 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-2 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5">
+                <div>
+                  <p className="text-[9px] text-slate-400">方案价</p>
+                  <p className="mt-1 font-mono text-xs font-bold text-slate-800">
+                    ¥{schemePriceYuan.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-blue-600">经销商下单价</p>
+                  <p className="mt-1 font-mono text-sm font-black text-blue-700">
+                    ¥{dealerPriceYuan.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-400">价格差额</p>
+                  <p className={`mt-1 font-mono text-xs font-bold ${
+                    priceDifferenceYuan >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                  }`}>
+                    {priceDifferenceYuan >= 0 ? '+' : '-'}¥{Math.abs(priceDifferenceYuan).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
               {/* Order customer & coupon */}
               <div className="space-y-2.5 pt-2 border-t border-slate-100">
                 <h4 className="font-extrabold text-xs text-slate-900">下单信息</h4>
@@ -1368,7 +1402,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
 
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-[10px]">
                     <span className="text-slate-500">
-                      商品原价 ¥{orderSubtotalYuan.toLocaleString()} · 运费 ¥{orderShippingFee.toLocaleString()}
+                      经销商价 ¥{orderSubtotalYuan.toLocaleString()} · 运费 ¥{orderShippingFee.toLocaleString()}
                     </span>
                     <span className="font-bold text-emerald-600">
                       优惠 -¥{Math.round(couponPreviewAmount).toLocaleString()} · 应付 ¥

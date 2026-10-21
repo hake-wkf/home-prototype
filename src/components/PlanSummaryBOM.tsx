@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AdminStorageManager } from '../utils/adminStorage';
 import {
-  ArrowLeft,
   Share2,
   ChevronRight,
   ChevronDown,
   Search,
   Filter,
-  ListOrdered,
   Download,
   Printer,
   Copy,
@@ -15,23 +13,17 @@ import {
   Edit3,
   SlidersHorizontal,
   X,
-  Zap,
   Building,
   Plus,
   Trash2,
-  RefreshCw,
-  ArrowUpDown,
   Move,
-  Info,
   Layers,
-  Cpu,
-  Radio,
-  PlusCircle,
   FileStack,
   Save,
   Maximize2,
   Upload,
   Gift,
+  Package,
 } from 'lucide-react';
 import {
   RenovationProject,
@@ -52,6 +44,9 @@ interface PlanSummaryBOMProps {
   onSaveRecord?: (summary: {
     couponEligibleAmount: number;
     externalAmount: number;
+    schemePriceYuan: number;
+    dealerPriceYuan: number;
+    priceDifferenceYuan: number;
     shippingFee: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{
@@ -168,6 +163,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
 
   // Main page view tab: 'device' (按设备查看) | 'room' (按房间查看)
   const [viewTab, setViewTab] = useState<'device' | 'room'>('device');
+  const [isProductListExpanded, setIsProductListExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Modals state
@@ -177,8 +173,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
   // Profit / Price modification state
-  const [taxRate, setTaxRate] = useState<number>(0); // 0%
-  const [profitMargin, setProfitMargin] = useState<number>(25); // 25% profit margin
   const [customDiscount, setCustomDiscount] = useState<number>(100); // 100%
 
   const costSummary = calculateProjectCost(project);
@@ -593,10 +587,12 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   // Calculations based on dynamic items
   const baseTotalCost = deviceItems.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
   const discountedTotal = Math.round((baseTotalCost * customDiscount) / 100);
-  const taxAmount = Math.round((discountedTotal * taxRate) / 100);
-  const finalTotalCost = discountedTotal + taxAmount;
+  const finalTotalCost = discountedTotal;
+  const schemePriceYuan = finalTotalCost;
+  const dealerPriceYuan = Math.round(baseTotalCost * 0.8);
+  const priceDifferenceYuan = schemePriceYuan - dealerPriceYuan;
   const totalDeviceCount = deviceItems.reduce((sum, item) => sum + item.qty, 0);
-  const profitAmount = Math.round(discountedTotal * (profitMargin / 100));
+  const visibleDeviceItems = isProductListExpanded ? deviceItems : deviceItems.slice(0, 5);
   const selfProductAmount = deviceItems
     .filter((item) => item.supplyType !== 'external' && !item.isGift)
     .reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
@@ -719,21 +715,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
     setDeviceItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleReplaceItem = (id: string) => {
-    const newName = prompt('请输入替换后的设备型号/名称:', 'Aqara 智能网关/开关');
-    if (newName) {
-      setDeviceItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, model: newName } : item))
-      );
-    }
-  };
-
-  const handleEditItem = (id: string) => {
-    const item = deviceItems.find((i) => i.id === id);
-    if (!item) return;
-    setEditingItem({ ...item });
-  };
-
   const handleSaveEditedItem = () => {
     if (!editingItem) return;
     setDeviceItems((prev) =>
@@ -830,33 +811,31 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
     return (
       <div className="relative w-full space-y-3.5 pb-28 animate-fadeIn text-slate-900 print:bg-white">
         {/* Sub-tabs: 按设备查看 | 按房间查看 */}
-        <div className="grid grid-cols-2 bg-white rounded-2xl p-1 border border-slate-200 shadow-2xs">
+        <div className="grid grid-cols-2 rounded-full bg-slate-100 p-1">
           <button
             onClick={() => setViewTab('device')}
-            className={`py-2.5 text-xs sm:text-sm font-bold transition-all relative cursor-pointer ${
-              viewTab === 'device' ? 'text-blue-600 font-extrabold' : 'text-slate-500 hover:text-slate-800'
+            className={`rounded-full py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              viewTab === 'device'
+                ? 'bg-white text-slate-900 font-extrabold shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             按设备查看
-            {viewTab === 'device' && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-600 rounded-full"></span>
-            )}
           </button>
           <button
             onClick={() => setViewTab('room')}
-            className={`py-2.5 text-xs sm:text-sm font-bold transition-all relative cursor-pointer ${
-              viewTab === 'room' ? 'text-blue-600 font-extrabold' : 'text-slate-500 hover:text-slate-800'
+            className={`rounded-full py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              viewTab === 'room'
+                ? 'bg-white text-slate-900 font-extrabold shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             按房间查看
-            {viewTab === 'room' && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-600 rounded-full"></span>
-            )}
           </button>
         </div>
 
         {/* Quick Summary Chips */}
-        <div className="flex items-center justify-between text-xs py-1 px-1">
+        <div className="hidden">
           <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none">
             {['客厅', '主卧', '次卧', '弱电箱 / 默认楼层'].map((rm) => {
               const count = deviceItems.reduce(
@@ -882,7 +861,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
           {groupedDeviceItems.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-2.5">
               {/* Group Header Title */}
-              <div className="flex items-center justify-between px-3.5 py-2 bg-slate-100 rounded-xl text-xs sm:text-sm font-extrabold text-slate-800 border border-slate-200/80">
+              <div className="hidden">
                 <div className="flex items-center space-x-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                   <span>{group.groupName}</span>
@@ -910,7 +889,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                         </span>
 
                         {/* Room Location Tag */}
-                        <div className="flex items-center space-x-1 bg-amber-50 text-amber-800 px-2.5 py-0.5 rounded-md text-xs font-bold border border-amber-200/80">
+                        <div className="hidden">
                           <span>📍</span>
                           <select
                             value={item.roomName || '客厅'}
@@ -934,62 +913,52 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleReplaceItem(item.id)}
-                          className="flex items-center space-x-1 hover:text-blue-600 transition-colors cursor-pointer p-1 rounded-md hover:bg-blue-50"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          <span className="text-xs font-bold">换</span>
-                        </button>
-                        <button
-                          onClick={() => handleEditItem(item.id)}
-                          className="text-blue-600 font-bold text-xs hover:underline cursor-pointer px-1 py-0.5"
-                        >
-                          编辑
-                        </button>
                       </div>
                     </div>
 
-                    {/* Main Content: Image + Details + Price & Quantity */}
-                    <div className="flex items-start space-x-3.5">
+                    <div className="flex items-start gap-3">
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-50 border border-slate-200/80 shrink-0 p-1.5 flex items-center justify-center overflow-hidden shadow-2xs">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.model}
-                          className="w-full h-full object-contain rounded-lg"
-                        />
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.model}
+                            className="w-full h-full object-contain rounded-lg"
+                          />
+                        ) : (
+                          <Package className="h-7 w-7 text-slate-300" />
+                        )}
                       </div>
 
-                      <div className="flex-1 space-y-1 pr-1 min-w-0">
+                      <div className="min-w-0 flex-1 space-y-1 pr-1">
                         <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug">
                           {item.model}
                         </h4>
                         <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
                           {item.description}
                         </p>
-                        <div className="font-mono font-black text-slate-900 text-xs sm:text-sm pt-0.5">
-                          ¥{item.unitPrice.toLocaleString()}
-                        </div>
                       </div>
+                    </div>
 
-                      {/* Quantity Stepper */}
-                      <div className="flex items-center space-x-1.5 shrink-0 self-end">
+                    <div className="mt-2 flex items-center justify-between gap-3 pl-[76px] sm:pl-[92px]">
+                      <div className="font-mono text-sm font-black text-slate-900">
+                        ¥{item.unitPrice.toLocaleString()}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => handleQtyChange(item.id, -1)}
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold flex items-center justify-center transition-colors cursor-pointer text-sm shadow-2xs"
+                          className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-800 hover:bg-slate-200 cursor-pointer"
                         >
                           -
                         </button>
-                        <span className="font-mono font-extrabold text-xs sm:text-sm text-slate-900 px-1.5 min-w-[20px] text-center">
+                        <span className="min-w-[20px] text-center font-mono text-sm font-extrabold text-slate-900">
                           {item.qty}
                         </span>
                         <button
                           onClick={() => handleQtyChange(item.id, 1)}
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold flex items-center justify-center transition-colors cursor-pointer text-sm shadow-2xs"
+                          className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-800 hover:bg-slate-200 cursor-pointer"
                         >
                           +
                         </button>
-                        <span className="text-xs text-slate-500 font-semibold">{item.unit}</span>
                       </div>
                     </div>
                   </div>
@@ -1004,7 +973,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
           <div className="w-full space-y-2.5">
             <div className="flex items-center justify-between text-xs sm:text-sm text-slate-600 px-1">
               <div className="flex items-center space-x-4">
-                <span>税点: <strong className="text-slate-900 font-mono">{taxRate}%</strong></span>
+                <span>折扣: <strong className="text-slate-900 font-mono">{customDiscount}%</strong></span>
                 <span>总数: <strong className="text-slate-900 font-mono">{totalDeviceCount}</strong></span>
               </div>
               <div>
@@ -1015,32 +984,13 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
-              <button
-                onClick={() =>
-                  setDeviceItems((prev) => [...prev].sort((a, b) => b.unitPrice - a.unitPrice))
-                }
-                className="py-3 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
-              >
-                <ArrowUpDown className="w-4 h-4 text-slate-600" />
-                <span>排序</span>
-              </button>
-
-              <button
-                onClick={() => setIsAddProductModalOpen(true)}
-                className="py-3 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-600 font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-blue-200"
-              >
-                <Plus className="w-4 h-4 text-blue-600" />
-                <span>加产品</span>
-              </button>
-
-              <button
-                onClick={() => setIsProfitModalOpen(true)}
-                className="py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer shadow-sm"
-              >
-                <span>改价格算利润</span>
-              </button>
-            </div>
+            <button
+              onClick={() => setIsAddProductModalOpen(true)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-full border border-blue-500 bg-white py-3 text-sm font-extrabold text-blue-600 hover:bg-blue-50 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              加产品
+            </button>
           </div>
         </div>
 
@@ -1457,93 +1407,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
           </div>
         )}
 
-        {/* Modal: 改价格算利润 */}
-        {isProfitModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 animate-scaleUp border border-slate-100">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-4 h-4 text-blue-600" />
-                  <span>改价格算利润工具</span>
-                </h3>
-                <button
-                  onClick={() => setIsProfitModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="text-slate-600 font-semibold block mb-1">
-                    开票税点 (%):
-                  </label>
-                  <select
-                    value={taxRate}
-                    onChange={(e) => setTaxRate(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-hidden focus:border-blue-500"
-                  >
-                    <option value={0}>0% (不含税 / 普通发票)</option>
-                    <option value={3}>3% (小规模纳税人)</option>
-                    <option value={6}>6% (建筑服务)</option>
-                    <option value={13}>13% (增值税专票)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-slate-600 font-semibold block mb-1">
-                    期望毛利润率 (%):
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="80"
-                    value={profitMargin}
-                    onChange={(e) => setProfitMargin(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-hidden focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-600 font-semibold block mb-1">
-                    整单折扣 (%) :
-                  </label>
-                  <input
-                    type="number"
-                    min="50"
-                    max="100"
-                    value={customDiscount}
-                    onChange={(e) => setCustomDiscount(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-hidden focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 space-y-1 font-mono text-[11px]">
-                  <div className="flex justify-between text-blue-900">
-                    <span>折后设备总额:</span>
-                    <span className="font-bold">¥{discountedTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-blue-900">
-                    <span>预估税额 ({taxRate}%):</span>
-                    <span>¥{taxAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-emerald-700 font-bold border-t border-blue-200 pt-1">
-                    <span>预估毛利润:</span>
-                    <span>¥{profitAmount.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsProfitModalOpen(false)}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
-              >
-                保存并更新价格
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -1579,7 +1442,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
             onClick={() => setIsProfitModalOpen(true)}
             className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
           >
-            改价格算利润
+            方案折扣
           </button>
           <button
             onClick={() => setPageMode('editList')}
@@ -1630,7 +1493,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
             </div>
 
             {/* Table Rows */}
-            {deviceItems.map((item) => (
+            {visibleDeviceItems.map((item) => (
               <div
                 key={item.id}
                 className="grid grid-cols-12 px-4 py-3 items-center hover:bg-slate-50/60 transition-colors text-xs"
@@ -1665,19 +1528,28 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
               </div>
             ))}
 
+            {deviceItems.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setIsProductListExpanded((expanded) => !expanded)}
+                className="flex w-full items-center justify-center gap-1 border-t border-slate-100 bg-white py-2.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 cursor-pointer"
+              >
+                {isProductListExpanded
+                  ? '收起产品'
+                  : `展开全部 ${deviceItems.length} 个产品`}
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${
+                    isProductListExpanded ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+            )}
+
             {/* Bottom Footer Row */}
             <div className="p-4 bg-white flex items-center justify-between text-xs text-slate-500 border-t border-slate-100">
-              <div className="flex items-center space-x-3">
-                <span>
-                  税点: <strong className="text-slate-800 font-mono">{taxRate}%</strong>
-                </span>
-                <span>
-                  总数: <strong className="text-slate-800 font-mono">{totalDeviceCount}</strong>
-                </span>
-                <span>
-                  优惠券可用: <strong className="text-slate-800 font-mono">¥{selfProductAmount.toLocaleString()}</strong>
-                </span>
-              </div>
+              <span>
+                总数: <strong className="text-slate-800 font-mono">{totalDeviceCount}</strong>
+              </span>
               <div>
                 <span>总价: </span>
                 <span className="text-base font-extrabold text-slate-900 font-mono ml-1">
@@ -1754,64 +1626,61 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                 100,
                 (promotion.progress / Math.max(1, promotion.conditionValue)) * 100,
               );
+              if (promotion.qualified) {
+                return (
+                  <div
+                    key={promotion.id}
+                    className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3"
+                  >
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-white text-emerald-600">
+                      <Gift className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
+                          赠品
+                        </span>
+                        <span className="rounded bg-white px-1.5 py-0.5 text-[9px] font-bold text-slate-500">
+                          {promotion.name}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 truncate text-xs font-extrabold text-slate-900">
+                        {promotion.rewardProductName}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10px] font-bold text-emerald-700">
+                        ¥0 · 已自动入库
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-mono text-xs font-extrabold text-slate-700">
+                      ×{promotion.rewardQuantity}
+                    </span>
+                  </div>
+                );
+              }
               return (
-                <div
-                  key={promotion.id}
-                  className={`rounded-xl border p-3 ${
-                    promotion.qualified
-                      ? 'border-emerald-200 bg-emerald-50/70'
-                      : 'border-slate-200 bg-slate-50'
-                  }`}
-                >
+                <div key={promotion.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className={`text-[11px] font-extrabold ${promotion.qualified ? 'text-emerald-800' : 'text-slate-800'}`}>
-                        {promotion.qualified
-                          ? `${promotion.rewardProductName} × ${promotion.rewardQuantity}`
-                          : promotion.name}
+                      <p className="text-[11px] font-extrabold text-slate-800">
+                        {promotion.name}
                       </p>
-                      <p className={`mt-0.5 text-[9px] ${promotion.qualified ? 'text-emerald-600' : 'text-slate-500'}`}>
-                        {promotion.qualified
-                          ? '已自动放入奖品栏，金额 ¥0'
-                          : `还差 ${remaining} ${promotion.conditionType === 'quantity' ? '件' : '元'}即可获得 ${promotion.rewardProductName}`}
+                      <p className="mt-0.5 text-[9px] text-slate-500">
+                        还差 {remaining} {promotion.conditionType === 'quantity' ? '件' : '元'}即可获得 {promotion.rewardProductName}
                       </p>
                     </div>
-                    {promotion.qualified && (
-                      <span className="shrink-0 rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-bold text-white">
-                        已满足
-                      </span>
-                    )}
                   </div>
-                  {!promotion.qualified && (
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className="h-full rounded-full bg-amber-500 transition-all"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  )}
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className="h-full rounded-full bg-blue-500 transition-all"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
       )}
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold text-slate-900">运费</p>
-            <p className="mt-1 text-[10px] text-slate-500">
-              自有产品满 ¥{businessRules.shippingThreshold.toLocaleString()} 含运费；外协产品不参与包邮。
-            </p>
-          </div>
-          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-            shippingFee === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-          }`}>
-            {shippingFee === 0 ? '已包邮' : `运费 ¥${shippingFee}`}
-          </span>
-        </div>
-      </div>
 
       {/* 4. 点位图 Card (再点位图 · 改名字为点位图 · 去除就绪徽章 · 支持内外上传户型图) */}
       <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs space-y-3">
@@ -1929,6 +1798,9 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                   onSaveRecord({
                     couponEligibleAmount: selfProductAmount,
                     externalAmount: externalProductAmount,
+                    schemePriceYuan,
+                    dealerPriceYuan,
+                    priceDifferenceYuan,
                     shippingFee,
                     shippingPolicyLabel,
                     promotionGifts: automaticRewards
@@ -1968,7 +1840,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
                 <SlidersHorizontal className="w-4 h-4 text-blue-600" />
-                <span>改价格算利润工具</span>
+                <span>方案折扣设置</span>
               </h3>
               <button
                 onClick={() => setIsProfitModalOpen(false)}
@@ -1979,34 +1851,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
             </div>
 
             <div className="space-y-3 text-xs">
-              <div>
-                <label className="text-slate-600 font-semibold block mb-1">开票税点 (%):</label>
-                <select
-                  value={taxRate}
-                  onChange={(e) => setTaxRate(Number(e.target.value))}
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-hidden focus:border-blue-500"
-                >
-                  <option value={0}>0% (不含税 / 增值税普通发票)</option>
-                  <option value={3}>3% (小规模纳税人)</option>
-                  <option value={6}>6% (建筑服务税率)</option>
-                  <option value={13}>13% (增值税专用发票)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-slate-600 font-semibold block mb-1">
-                  期望工程毛利润率 (%):
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="80"
-                  value={profitMargin}
-                  onChange={(e) => setProfitMargin(Number(e.target.value))}
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-hidden focus:border-blue-500"
-                />
-              </div>
-
               <div>
                 <label className="text-slate-600 font-semibold block mb-1">方案折扣率 (%):</label>
                 <input
@@ -2021,16 +1865,16 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
 
               <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 space-y-1 font-mono text-[11px]">
                 <div className="flex justify-between text-blue-900">
-                  <span>折后整单总额:</span>
-                  <span className="font-bold">¥{discountedTotal.toLocaleString()}</span>
+                  <span>方案原价:</span>
+                  <span>¥{baseTotalCost.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-blue-900">
-                  <span>发票税额 ({taxRate}%):</span>
-                  <span>¥{taxAmount.toLocaleString()}</span>
+                  <span>折扣优惠:</span>
+                  <span>-¥{(baseTotalCost - discountedTotal).toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-emerald-700 font-bold border-t border-blue-200 pt-1">
-                  <span>预估纯利润:</span>
-                  <span>¥{profitAmount.toLocaleString()}</span>
+                <div className="flex justify-between font-bold text-blue-900 border-t border-blue-200 pt-1">
+                  <span>方案价格:</span>
+                  <span>¥{discountedTotal.toLocaleString()}</span>
                 </div>
               </div>
             </div>

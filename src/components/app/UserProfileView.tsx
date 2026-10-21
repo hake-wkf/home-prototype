@@ -379,15 +379,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       </div>
 
       {activeTab === 'overview' && currentPromotion && (
-        <div className="overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-amber-100/80 px-4 py-2.5">
-            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-blue-50/70 to-slate-50 shadow-2xs">
+          <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-2.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-700">
               <Sparkles className="h-3.5 w-3.5" />
               你有可参与的营销活动
             </div>
             <button
               onClick={() => setActiveTab('promotions')}
-              className="rounded-lg bg-white/80 px-2.5 py-1 text-[10px] font-bold text-amber-700 hover:bg-white cursor-pointer"
+              className="rounded-lg bg-white/90 px-2.5 py-1 text-[10px] font-bold text-blue-600 hover:bg-white cursor-pointer"
             >
               查看全部
             </button>
@@ -399,18 +399,18 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                   index === 0 ? marketingPromotions.length - 1 : index - 1,
                 )
               }
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-amber-700 hover:bg-white cursor-pointer"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/90 text-blue-600 hover:bg-white cursor-pointer"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <Gift className="h-4 w-4 shrink-0 text-amber-600" />
+                <Gift className="h-4 w-4 shrink-0 text-blue-500" />
                 <p className="truncate text-xs font-extrabold text-slate-900">
                   {currentPromotion.name}
                 </p>
               </div>
-              <p className="mt-1 truncate text-[10px] text-amber-700">
+              <p className="mt-1 truncate text-[10px] text-slate-500">
                 {currentPromotion.conditionType === 'quantity'
                   ? `满足 ${currentPromotion.conditionCategory} ${currentPromotion.conditionValue} 件`
                   : `订单满 ¥${currentPromotion.conditionValue.toLocaleString()}`}
@@ -423,14 +423,14 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                       key={promotion.id}
                       onClick={() => setPromotionIndex(index)}
                       className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                        index === promotionIndex ? 'w-5 bg-amber-500' : 'w-1.5 bg-amber-200'
+                        index === promotionIndex ? 'w-5 bg-blue-500' : 'w-1.5 bg-blue-200'
                       }`}
                     />
                   ))}
                 </div>
                 <button
                   onClick={() => setActiveTab('promotions')}
-                  className="flex items-center gap-0.5 text-[10px] font-bold text-amber-700 cursor-pointer"
+                  className="flex items-center gap-0.5 text-[10px] font-bold text-blue-600 cursor-pointer"
                 >
                   活动列表
                   <ChevronRight className="h-3.5 w-3.5" />
@@ -441,7 +441,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
               onClick={() =>
                 setPromotionIndex((index) => (index + 1) % marketingPromotions.length)
               }
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-amber-700 hover:bg-white cursor-pointer"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/90 text-blue-600 hover:bg-white cursor-pointer"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -483,51 +483,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                 <p className="mt-1 text-[9px] text-amber-600">仅作履约保证金，不可参与下单</p>
               </div>
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-extrabold text-slate-900">经销商档案</p>
-                <p className="mt-1 text-[10px] text-slate-400">
-                  合同期至 {user.contractEndDate || '未设置'}
-                </p>
-              </div>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
-                {user.businessScopes?.length || 0} 类业务
-              </span>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {[
-                { label: '经营品牌', value: user.operationBrands || '未填写' },
-                { label: '年销量', value: user.annualSales || '未填写' },
-                { label: '店面面积', value: user.storeArea || '未填写' },
-                { label: '公司人员', value: user.companyStaff || '未填写' },
-                { label: '年度出货', value: user.annualShipment || '未填写' },
-                {
-                  label: '业务范围',
-                  value: user.businessScopes?.join('、') || '未填写',
-                },
-              ].map((item) => (
-                <div key={item.label} className="rounded-xl bg-slate-50 px-3 py-2.5">
-                  <p className="text-[9px] text-slate-400">{item.label}</p>
-                  <p className="mt-1 truncate text-[11px] font-bold text-slate-800">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-            {user.giftDescription && (
-              <div className="mt-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5">
-                <p className="flex items-center gap-1 text-[9px] font-bold text-amber-700">
-                  <Gift className="h-3 w-3" />
-                  赠送内容
-                </p>
-                <p className="mt-1 text-[10px] leading-relaxed text-slate-700">
-                  {user.giftDescription}
-                </p>
-              </div>
-            )}
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
@@ -621,7 +576,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       )}
 
       {activeTab === 'promotions' && (
-        <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-2xs">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
@@ -637,7 +592,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                 </p>
               </div>
             </div>
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 font-mono text-xs font-bold text-amber-700">
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 font-mono text-xs font-bold text-blue-700">
               {marketingPromotions.length} 个
             </span>
           </div>
@@ -651,12 +606,12 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
               marketingPromotions.map((promotion) => (
                 <div
                   key={promotion.id}
-                  className="rounded-xl border border-amber-100 bg-amber-50/50 p-3.5"
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-3.5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <Gift className="h-4 w-4 shrink-0 text-amber-600" />
+                        <Gift className="h-4 w-4 shrink-0 text-blue-500" />
                         <p className="text-xs font-extrabold text-slate-900">{promotion.name}</p>
                       </div>
                       <p className="mt-1 text-[10px] leading-relaxed text-slate-600">
@@ -666,11 +621,11 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                         ，自动赠送 {promotion.rewardProductName} × {promotion.rewardQuantity}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">
+                    <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-700">
                       可参与
                     </span>
                   </div>
-                  <div className="mt-2 flex items-center justify-between border-t border-amber-100 pt-2 text-[9px] text-slate-400">
+                  <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2 text-[9px] text-slate-400">
                     <span className="flex items-center gap-1">
                       <CalendarDays className="h-3 w-3" />
                       {promotion.startDate} 至 {promotion.endDate}

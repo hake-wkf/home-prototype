@@ -268,6 +268,9 @@ export default function App() {
   const buildCurrentPlanRecord = (summary?: {
     couponEligibleAmount: number;
     externalAmount: number;
+    schemePriceYuan: number;
+    dealerPriceYuan: number;
+    priceDifferenceYuan: number;
     shippingFee: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{
@@ -304,6 +307,9 @@ export default function App() {
       orderStatusLabel: '待对接',
       couponEligibleAmount: summary?.couponEligibleAmount,
       externalAmount: summary?.externalAmount,
+      schemePriceYuan: summary?.schemePriceYuan,
+      dealerPriceYuan: summary?.dealerPriceYuan,
+      priceDifferenceYuan: summary?.priceDifferenceYuan,
       shippingFee: summary?.shippingFee,
       shippingPolicyLabel: summary?.shippingPolicyLabel,
       promotionGifts: summary?.promotionGifts,
@@ -316,6 +322,9 @@ export default function App() {
   const handleSaveCurrentPlan = (summary?: {
     couponEligibleAmount: number;
     externalAmount: number;
+    schemePriceYuan: number;
+    dealerPriceYuan: number;
+    priceDifferenceYuan: number;
     shippingFee: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{

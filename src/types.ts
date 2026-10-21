@@ -383,6 +383,9 @@ export interface SavedPlanRecord {
   customerAddress?: string;
   couponEligibleAmount?: number;
   externalAmount?: number;
+  schemePriceYuan?: number;
+  dealerPriceYuan?: number;
+  priceDifferenceYuan?: number;
   shippingFee?: number;
   shippingPolicyLabel?: string;
   purchaseBalanceDeducted?: number;
