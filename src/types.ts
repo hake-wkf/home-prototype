@@ -402,6 +402,7 @@ export interface SavedPlanRecord {
   dealerPriceYuan?: number;
   priceDifferenceYuan?: number;
   shippingFee?: number;
+  shippingThreshold?: number;
   shippingPolicyLabel?: string;
   purchaseBalanceDeducted?: number;
   creditPaymentAmount?: number;

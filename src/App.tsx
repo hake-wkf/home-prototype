@@ -272,6 +272,7 @@ export default function App() {
     dealerPriceYuan: number;
     priceDifferenceYuan: number;
     shippingFee: number;
+    shippingThreshold: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{
       productId: string;
@@ -316,6 +317,7 @@ export default function App() {
       dealerPriceYuan: summary?.dealerPriceYuan,
       priceDifferenceYuan: summary?.priceDifferenceYuan,
       shippingFee: summary?.shippingFee,
+      shippingThreshold: summary?.shippingThreshold,
       shippingPolicyLabel: summary?.shippingPolicyLabel,
       promotionGifts: summary?.promotionGifts,
       project: JSON.parse(JSON.stringify(project)),
@@ -331,6 +333,7 @@ export default function App() {
     dealerPriceYuan: number;
     priceDifferenceYuan: number;
     shippingFee: number;
+    shippingThreshold: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{
       productId: string;

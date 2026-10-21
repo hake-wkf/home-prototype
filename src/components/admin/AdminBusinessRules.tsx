@@ -483,8 +483,8 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
             </label>
           </div>
           <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3 text-[11px] leading-relaxed text-blue-800">
-            当前规则：自有产品订单满 ¥{rules.shippingThreshold.toLocaleString()} 免邮；
-            未满由客户承担运费，系统不预设具体金额；影音、部分灯具、监控等外协产品不计入包邮金额。
+            当前规则：未满 ¥{rules.shippingThreshold.toLocaleString()}，邮费自理；
+            满 ¥{rules.shippingThreshold.toLocaleString()}，免邮费；影音、部分灯具、监控等外协产品不计入包邮金额。
           </div>
         </div>
       )}

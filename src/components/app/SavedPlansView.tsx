@@ -286,12 +286,19 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     Math.min(contactSalesPlan?.couponEligibleAmount ?? orderSubtotalYuan, orderSubtotalYuan);
   const externalAmountYuan = contactSalesPlan?.externalAmount || 0;
   const orderShippingFee = 0;
-  const shippingPolicyDisplay =
-    contactSalesPlan?.shippingPolicyLabel?.includes('未满') ||
-    contactSalesPlan?.shippingPolicyLabel?.includes('需支付') ||
-    contactSalesPlan?.shippingPolicyLabel?.includes('自费')
-      ? '未满包邮门槛，运费自费'
-      : '已满足包邮条件，免邮';
+  const shippingThreshold =
+    contactSalesPlan?.shippingThreshold ||
+    (() => {
+      try {
+        const stored = localStorage.getItem('zhijia_admin_business_rules_v1');
+        return stored ? Number(JSON.parse(stored).shippingThreshold) || 20000 : 20000;
+      } catch {
+        return 20000;
+      }
+    })();
+  const shippingPolicyDisplay = `未满 ¥${shippingThreshold.toLocaleString()}，邮费自理；满 ¥${shippingThreshold.toLocaleString()}，免邮费`;
+  const isCurrentFreeShipping =
+    (contactSalesPlan?.couponEligibleAmount || 0) >= shippingThreshold;
   const couponPreviewAmount = selectedOrderCoupon
     ? selectedOrderCoupon.type === 'discount'
       ? Math.max(0, couponEligibleYuan * (1 - selectedOrderCoupon.value / 10))
@@ -1443,7 +1450,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-[10px]">
                     <span className="text-slate-500">
                       经销商价 ¥{orderSubtotalYuan.toLocaleString()} · 运费
-                      {shippingPolicyDisplay.includes('自费') ? ' 自费' : ' 免邮'}
+                      {isCurrentFreeShipping ? ' 免邮费' : ' 邮费自理'}
                     </span>
                     <span className="font-bold text-emerald-600">
                       优惠 -¥{Math.round(couponPreviewAmount).toLocaleString()} · 应付 ¥

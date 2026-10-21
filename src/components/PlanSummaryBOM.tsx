@@ -48,6 +48,7 @@ interface PlanSummaryBOMProps {
     dealerPriceYuan: number;
     priceDifferenceYuan: number;
     shippingFee: number;
+    shippingThreshold: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{
       productId: string;
@@ -687,12 +688,8 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   const shippingEligibleAmount =
     selfProductAmount +
     (businessRules.externalProductsIncludeFreeShipping ? externalProductAmount : 0);
-  const isFreeShipping = shippingEligibleAmount >= businessRules.shippingThreshold;
   const shippingFee = 0;
-  const shippingPolicyLabel =
-    isFreeShipping
-      ? `满 ¥${businessRules.shippingThreshold.toLocaleString()} 免邮`
-      : `未满 ¥${businessRules.shippingThreshold.toLocaleString()}，运费自费`;
+  const shippingPolicyLabel = `未满 ¥${businessRules.shippingThreshold.toLocaleString()}，邮费自理；满 ¥${businessRules.shippingThreshold.toLocaleString()}，免邮费`;
 
   // Active rooms for breakdown
   const activeRooms = project.rooms.length > 0 ? project.rooms : [
@@ -1807,6 +1804,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                     dealerPriceYuan,
                     priceDifferenceYuan,
                     shippingFee,
+                    shippingThreshold: businessRules.shippingThreshold,
                     shippingPolicyLabel,
                     promotionGifts: automaticRewards
                       .map((item) => ({

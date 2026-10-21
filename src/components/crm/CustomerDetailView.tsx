@@ -159,6 +159,28 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       transaction.accountType === 'deposit' ? '合作保证金' : '进货款',
     ].some((value) => value.toLowerCase().includes(query));
   });
+  const pendingBalanceRequests = customerAuditRequests.filter(
+    (request) => request.status !== 'approved',
+  );
+  const filteredPendingBalanceRequests = pendingBalanceRequests.filter((request) => {
+    const type = request.changeAmount >= 0 ? 'income' : 'expense';
+    if (balanceTypeFilter !== 'all' && type !== balanceTypeFilter) return false;
+    if (!balanceKeyword.trim()) return true;
+    const query = balanceKeyword.toLowerCase().trim();
+    return [
+      request.remark,
+      request.financeNote || '',
+      request.submittedAt,
+      request.customerName,
+      request.customerPhone,
+    ].some((value) => value.toLowerCase().includes(query));
+  });
+  const totalIncome = customerBalanceTransactions
+    .filter((transaction) => transaction.type === 'income')
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const totalExpense = customerBalanceTransactions
+    .filter((transaction) => transaction.type === 'expense')
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
   const latestAuditRecord = customerAuditRequests[0];
 
   // System coupons for grant
@@ -666,15 +688,27 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={() => setIsChangeBalanceOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
-            >
-              <Wallet className="h-4 w-4" />
-              财务设置资金账户
-            </button>
-
             <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="mb-4 grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5">
+                  <p className="text-[9px] font-bold text-emerald-600">累计收入</p>
+                  <p className="mt-1 font-mono text-base font-black text-emerald-700">
+                    +¥{totalIncome.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5">
+                  <p className="text-[9px] font-bold text-rose-600">累计支出</p>
+                  <p className="mt-1 font-mono text-base font-black text-rose-700">
+                    -¥{totalExpense.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5">
+                  <p className="text-[9px] font-bold text-amber-600">待审核申请</p>
+                  <p className="mt-1 font-mono text-base font-black text-amber-700">
+                    {pendingBalanceRequests.length} 笔
+                  </p>
+                </div>
+              </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h4 className="text-xs font-extrabold text-slate-900">收入与支出流水</h4>
@@ -713,12 +747,14 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
               </div>
 
               <div className="mt-3 space-y-2">
-                {filteredBalanceTransactions.length === 0 ? (
+                {filteredBalanceTransactions.length === 0 &&
+                filteredPendingBalanceRequests.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-6 text-center text-[11px] text-slate-400">
                     暂无符合条件的收支记录
                   </div>
                 ) : (
-                  filteredBalanceTransactions.map((transaction) => {
+                  <>
+                  {filteredBalanceTransactions.map((transaction) => {
                     const isIncome = transaction.type === 'income';
                     const Icon = isIncome ? ArrowDownLeft : ArrowUpRight;
                     return (
@@ -786,68 +822,90 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
                         )}
                       </div>
                     );
-                  })
+                  })}
+                  {filteredPendingBalanceRequests.map((request) => {
+                    const isIncome = request.changeAmount >= 0;
+                    const isRejected = request.status === 'rejected';
+                    const Icon = isIncome ? ArrowDownLeft : ArrowUpRight;
+                    return (
+                      <div
+                        key={request.id}
+                        className={`rounded-xl border p-3 ${
+                          isRejected
+                            ? 'border-rose-200 bg-rose-50/40'
+                            : 'border-amber-200 bg-amber-50/50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-start gap-2.5">
+                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                              isRejected
+                                ? 'bg-rose-100 text-rose-600'
+                                : isIncome
+                                  ? 'bg-emerald-100 text-emerald-600'
+                                  : 'bg-amber-100 text-amber-600'
+                            }`}>
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-bold text-slate-800">
+                                  {isIncome ? '回款申请' : '资金扣减申请'}
+                                </p>
+                                <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${
+                                  isRejected
+                                    ? 'bg-rose-100 text-rose-700'
+                                    : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  {isRejected ? '已驳回' : '待财务审核'}
+                                </span>
+                              </div>
+                              <p className="mt-0.5 text-[10px] text-slate-600">
+                                {request.financeNote || request.remark}
+                              </p>
+                              <p className="mt-1 font-mono text-[9px] text-slate-400">
+                                {request.financeReviewedAt || request.submittedAt} ·{' '}
+                                {request.accountType === 'deposit' ? '合作保证金' : '进货款'}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`shrink-0 font-mono text-sm font-black ${
+                            isIncome ? 'text-emerald-600' : 'text-rose-600'
+                          }`}>
+                            {isIncome ? '+' : '-'}¥{Math.abs(request.changeAmount).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex items-start justify-between gap-2 rounded-lg border border-white bg-white px-2.5 py-2">
+                          <div>
+                            <p className="text-[9px] font-bold text-slate-600">财务审核凭证</p>
+                            <p className="mt-0.5 text-[10px] text-slate-500">
+                              {request.financeReviewer
+                                ? `${request.financeReviewer} · ${request.financeReviewedAt || ''}`
+                                : '等待财务审核'}
+                            </p>
+                            <a
+                              href={request.paymentProofUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-1 inline-block text-[9px] font-bold text-blue-600 hover:underline"
+                            >
+                              查看付款截图
+                            </a>
+                          </div>
+                          <img
+                            src={request.paymentProofUrl}
+                            alt="付款凭证"
+                            className="h-10 w-10 rounded-lg border border-slate-200 object-cover"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  </>
                 )}
               </div>
             </div>
 
-            {/* Audit History */}
-            <div className="space-y-2.5">
-              <span className="text-xs font-extrabold text-slate-800 block">
-                回款与财务审核记录:
-              </span>
-
-              {customerAuditRequests.length === 0 ? (
-                <div className="text-center py-6 text-slate-400 text-xs bg-slate-50 rounded-xl border border-slate-200">
-                  暂无提交至财务审核的回款记录
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {customerAuditRequests.map((req) => (
-                    <div
-                      key={req.id}
-                      className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-slate-900">
-                            原余额 ¥{req.originalBalance} · 本次回款 +¥{Math.abs(req.changeAmount)} ➔ 回款后 ¥{req.targetBalance}
-                          </span>
-                        </div>
-
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            req.status === 'approved'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : req.status === 'rejected'
-                              ? 'bg-rose-100 text-rose-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {req.status === 'approved'
-                            ? '财务已审核通过 (已生效)'
-                            : req.status === 'rejected'
-                            ? '财务已驳回'
-                            : '待财务审核中'}
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-slate-600 bg-white p-2 rounded-lg border border-slate-200">
-                        <span className="font-bold text-slate-700">提交备注: </span>
-                        {req.remark}
-                      </p>
-
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span>提交人: {req.applicant} · {req.submittedAt}</span>
-                        {req.financeReviewer && (
-                          <span>审核人: {req.financeReviewer} ({req.financeReviewedAt})</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         )}
 

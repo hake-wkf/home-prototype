@@ -57,7 +57,10 @@ export const FinanceAuditCenter: React.FC<FinanceAuditCenterProps> = ({
         r.customerName.toLowerCase().includes(q) ||
         r.customerPhone.includes(q) ||
         r.remark.toLowerCase().includes(q) ||
-        r.id.toLowerCase().includes(q);
+        r.id.toLowerCase().includes(q) ||
+        r.applicant.toLowerCase().includes(q) ||
+        (r.financeReviewer || '').toLowerCase().includes(q) ||
+        (r.accountType === 'deposit' ? '合作保证金' : '进货款').includes(q);
       if (!match) return false;
     }
     return true;

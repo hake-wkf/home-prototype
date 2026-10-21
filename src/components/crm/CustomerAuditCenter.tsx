@@ -60,7 +60,10 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
         c.phone.includes(q) ||
         (c.community && c.community.toLowerCase().includes(q)) ||
         (c.projectName && c.projectName.toLowerCase().includes(q)) ||
-        (c.customNotes && c.customNotes.toLowerCase().includes(q));
+        (c.customNotes && c.customNotes.toLowerCase().includes(q)) ||
+        (c.assignedBusiness || '').toLowerCase().includes(q) ||
+        (c.assignedOperations || '').toLowerCase().includes(q) ||
+        c.salesperson.toLowerCase().includes(q);
       if (!match) return false;
     }
     return true;
