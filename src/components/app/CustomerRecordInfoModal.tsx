@@ -203,7 +203,7 @@ export const CustomerRecordInfoModal: React.FC<CustomerRecordInfoModalProps> = (
           phone: trimmedPhone,
           followUpStatus: '已登记客户信息',
           priceGrade: '高端级别',
-          salesperson: '专属商务顾问',
+          salesperson: '专属招商顾问',
           creator: '方案工作台',
           createdAt: nowTime,
           updatedAt: nowTime,
@@ -413,7 +413,7 @@ export const CustomerRecordInfoModal: React.FC<CustomerRecordInfoModalProps> = (
                 <textarea
                   id="textarea-customer-notes"
                   rows={4}
-                  placeholder="请在此手输记录客户偏好、方案要求、现场勘测细节或商务沟通备忘..."
+                  placeholder="请在此手输记录客户偏好、方案要求、现场勘测细节或招商经理沟通备忘..."
                   value={customerNotes}
                   onChange={(e) => setCustomerNotes(e.target.value)}
                   className="w-full text-xs text-slate-800 bg-transparent outline-none resize-none leading-relaxed"

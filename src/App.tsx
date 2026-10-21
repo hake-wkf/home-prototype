@@ -480,7 +480,7 @@ export default function App() {
           </div>
           <h1 className="mt-4 text-lg font-black text-slate-900">账号已停用</h1>
           <p className="mt-2 text-xs leading-relaxed text-slate-500">
-            当前账户暂不可使用 App，请联系负责商务或平台管理员处理。
+            当前账户暂不可使用 App，请联系负责招商经理或平台管理员处理。
           </p>
           <button
             onClick={() => setCurrentUser({ ...currentUser, isLoggedIn: false })}

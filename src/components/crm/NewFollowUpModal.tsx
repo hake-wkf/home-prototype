@@ -141,7 +141,7 @@ export const NewFollowUpModal: React.FC<NewFollowUpModalProps> = ({
                 <option value="现场量房">现场量房</option>
                 <option value="门店接待">门店接待</option>
                 <option value="方案汇报">方案汇报</option>
-                <option value="商务洽谈">商务洽谈</option>
+                <option value="招商经理洽谈">招商经理洽谈</option>
                 <option value="售后回访">售后回访</option>
                 <option value="其他">其他</option>
               </select>

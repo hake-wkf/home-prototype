@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
-import { X, Plus, ChevronRight } from 'lucide-react';
-import { Customer, CustomerType, PriceGrade } from '../../types';
+import React, { useEffect, useState } from 'react';
+import {
+  Building2,
+  Check,
+  FileText,
+  Gift,
+  Phone,
+  Upload,
+  X,
+} from 'lucide-react';
+import { Customer, CustomerAttachment } from '../../types';
 
 interface NewCustomerModalProps {
   isOpen: boolean;
@@ -9,86 +17,125 @@ interface NewCustomerModalProps {
   defaultIsPool?: boolean;
 }
 
+const BUSINESS_SCOPES = ['家装', '酒店项目', '办公项目', '地产项目'];
+
+const getContractMonths = () => {
+  try {
+    const stored = localStorage.getItem('zhijia_admin_business_rules_v1');
+    if (stored) {
+      const rules = JSON.parse(stored) as {
+        defaultContractMonths?: number;
+        renewalReminderDays?: number;
+      };
+      return {
+        months: Math.max(1, rules.defaultContractMonths || 12),
+        reminderDays: rules.renewalReminderDays || 30,
+      };
+    }
+  } catch {
+    // Use the default contract settings.
+  }
+  return { months: 12, reminderDays: 30 };
+};
+
 export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  defaultIsPool = true,
+  defaultIsPool = false,
 }) => {
-  const contractRules = (() => {
-    try {
-      const stored = localStorage.getItem('zhijia_admin_business_rules_v1');
-      if (stored) {
-        return JSON.parse(stored) as {
-          defaultContractMonths?: number;
-          renewalReminderDays?: number;
-        };
-      }
-    } catch {
-      // Use the default one-year contract rule.
-    }
-    return { defaultContractMonths: 12, renewalReminderDays: 30 };
-  })();
-  const contractMonths = Math.max(1, contractRules.defaultContractMonths || 12);
+  const contractRules = getContractMonths();
   const [name, setName] = useState('');
-  const [projectName, setProjectName] = useState('');
   const [phone, setPhone] = useState('');
-  const [region, setRegion] = useState('北京-北京-朝阳');
-  const [detailAddress, setDetailAddress] = useState('');
-  const [source, setSource] = useState('上门用户');
-  const [category, setCategory] = useState<CustomerType>('家装客户');
-  const [designer, setDesigner] = useState('');
-  const [salesperson, setSalesperson] = useState('卫科帆');
-  const [firstContactDate, setFirstContactDate] = useState('2026-08-18');
-  const [contractStartDate, setContractStartDate] = useState('2026-10-20');
-  const [houseArea, setHouseArea] = useState('');
-  const [houseLayout, setHouseLayout] = useState('两室两厅');
-  const [channel, setChannel] = useState('暂无');
-  const [requirement, setRequirement] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [contractStartDate, setContractStartDate] = useState('2026-10-21');
+  const [contractEndDate, setContractEndDate] = useState('');
+  const [operationBrands, setOperationBrands] = useState('');
+  const [annualSales, setAnnualSales] = useState('');
+  const [storeArea, setStoreArea] = useState('');
+  const [companyStaff, setCompanyStaff] = useState('');
+  const [annualShipment, setAnnualShipment] = useState('');
+  const [businessScopes, setBusinessScopes] = useState<string[]>(['家装']);
+  const [giftDescription, setGiftDescription] = useState('');
   const [remark, setRemark] = useState('');
-  const [priceGrade, setPriceGrade] = useState<PriceGrade>('普通级别');
+  const [contractAttachments, setContractAttachments] = useState<CustomerAttachment[]>([]);
+
+  useEffect(() => {
+    if (!contractStartDate) return;
+    const end = new Date(`${contractStartDate}T00:00:00`);
+    end.setMonth(end.getMonth() + contractRules.months);
+    const year = end.getFullYear();
+    const month = String(end.getMonth() + 1).padStart(2, '0');
+    const day = String(end.getDate()).padStart(2, '0');
+    setContractEndDate(`${year}-${month}-${day}`);
+  }, [contractStartDate, contractRules.months]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !projectName.trim()) return;
+  const handleAttachmentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files: File[] = event.target.files ? Array.from(event.target.files) : [];
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const url = String(loadEvent.target?.result || '');
+        setContractAttachments((items) => [
+          ...items,
+          {
+            id: `attachment_${Date.now()}_${file.name}`,
+            name: file.name,
+            type: file.type || 'application/octet-stream',
+            url,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    event.target.value = '';
+  };
+
+  const toggleBusinessScope = (scope: string) => {
+    setBusinessScopes((items) =>
+      items.includes(scope) ? items.filter((item) => item !== scope) : [...items, scope],
+    );
+  };
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!name.trim() || !phone.trim()) return;
 
     const newCustomer: Customer = {
       id: `cust_${Date.now()}`,
       code: `KH${Date.now().toString().slice(-8)}`,
       name: name.trim(),
-      projectName: projectName.trim(),
-      phone: phone.trim() || '17696180841',
+      projectName: projectName.trim() || `${name.trim()}经销项目`,
+      phone: phone.trim(),
       followUpStatus: '未跟进',
-      priceGrade,
-      salesperson,
+      salesperson: '待指派招商经理',
       creator: '卫科帆',
-      createdAt: '08-18 16:28',
-      updatedAt: '08-18 16:28',
+      createdAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+      updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
       isPool: defaultIsPool,
       accountEnabled: true,
       cooperationDeposit: 0,
       purchaseBalance: 0,
       contractStartDate,
-      contractEndDate: (() => {
-        const end = new Date(`${contractStartDate}T00:00:00`);
-        end.setMonth(end.getMonth() + contractMonths);
-        return end.toISOString().slice(0, 10);
-      })(),
-      renewalReminderDays: contractRules.renewalReminderDays || 30,
-      region,
-      detailAddress: detailAddress.trim() || '北京顺义区大槐树镇',
-      source,
-      category,
-      designer: designer.trim() || '测试',
-      firstContactDate,
-      houseArea: houseArea.trim() || '120',
-      houseLayout,
-      channel,
-      requirement: requirement.trim() || '全屋智能方案设计',
-      remark: remark.trim() || '暂无',
-      wechat: `wx_${name}`,
+      contractEndDate,
+      renewalReminderDays: contractRules.reminderDays,
+      contractAttachments,
+      giftDescription: giftDescription.trim(),
+      operationBrands: operationBrands.trim(),
+      annualSales: annualSales.trim(),
+      storeArea: storeArea.trim(),
+      companyStaff: companyStaff.trim(),
+      businessScopes,
+      annualShipment: annualShipment.trim(),
+      region: '北京-北京-朝阳',
+      detailAddress: '',
+      source: '渠道介绍',
+      category: '家装客户',
+      requirement: businessScopes.join('、') || '全屋智能经销合作',
+      remark: remark.trim(),
+      wechat: '',
     };
 
     onSave(newCustomer);
@@ -96,293 +143,246 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-xs p-4 animate-fadeIn">
-      <div
-        className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden animate-scaleIn"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
-          <h3 className="text-sm font-bold text-slate-800">新增客户</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs animate-fadeIn">
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div>
+            <h3 className="text-base font-black text-slate-900">新增经销商</h3>
+            <p className="mt-0.5 text-[10px] text-slate-400">名称和手机号为必填项，其他资料可后续补充</p>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-100 cursor-pointer"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Modal Body / Form */}
-        <form onSubmit={handleSubmit} className="p-6 text-xs space-y-5 max-h-[75vh] overflow-y-auto">
-          {/* 基本信息 */}
-          <div>
-            <div className="flex items-center space-x-1 mb-3">
-              <span className="font-bold text-slate-900 border-b-2 border-blue-600 pb-0.5">基本信息</span>
+        <form onSubmit={handleSubmit} className="flex-1 space-y-5 overflow-y-auto p-5 text-xs">
+          <section>
+            <div className="mb-3 flex items-center gap-2 text-[11px] font-extrabold text-slate-900">
+              <Building2 className="h-4 w-4 text-blue-600" />
+              基本情况
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">
-                  <span className="text-rose-500">*</span> 客户姓名:
-                </label>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">经销商名称 <span className="text-rose-500">*</span></span>
                 <input
-                  type="text"
                   required
-                  placeholder="请输入客户姓名"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="请输入公司或经销商名称"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
                 />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">
-                  <span className="text-rose-500">*</span> 项目名称:
-                </label>
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">手机号 <span className="text-rose-500">*</span></span>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    required
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="请输入手机号"
+                    className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 font-mono outline-none focus:border-blue-500"
+                  />
+                </div>
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">经营品牌</span>
                 <input
-                  type="text"
-                  required
-                  placeholder="请输入项目名称"
+                  value={operationBrands}
+                  onChange={(event) => setOperationBrands(event.target.value)}
+                  placeholder="如：翎扬、锐捷、Aqara"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">公司人员</span>
+                <input
+                  value={companyStaff}
+                  onChange={(event) => setCompanyStaff(event.target.value)}
+                  placeholder="如：20 人"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">年销量</span>
+                <input
+                  value={annualSales}
+                  onChange={(event) => setAnnualSales(event.target.value)}
+                  placeholder="如：500 万元"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">店面面积</span>
+                <input
+                  value={storeArea}
+                  onChange={(event) => setStoreArea(event.target.value)}
+                  placeholder="如：300 ㎡"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">年度出货</span>
+                <input
+                  value={annualShipment}
+                  onChange={(event) => setAnnualShipment(event.target.value)}
+                  placeholder="如：20 万元"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">项目名称</span>
+                <input
                   value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
+                  onChange={(event) => setProjectName(event.target.value)}
+                  placeholder="选填"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
                 />
-              </div>
-
+              </label>
             </div>
-          </div>
+          </section>
 
-          {/* 补充信息 */}
-          <div>
-            <div className="flex items-center justify-between mb-3 pt-2 border-t border-slate-100">
-              <span className="font-bold text-slate-900 border-b-2 border-blue-600 pb-0.5">补充信息</span>
-              <button type="button" className="text-[11px] text-blue-600 hover:underline flex items-center gap-0.5 cursor-pointer">
-                <span>自定义字段</span>
-                <ChevronRight className="w-3 h-3" />
-              </button>
+          <section className="border-t border-slate-100 pt-4">
+            <div className="mb-3 text-[11px] font-extrabold text-slate-900">业务范围</div>
+            <div className="flex flex-wrap gap-2">
+              {BUSINESS_SCOPES.map((scope) => {
+                const selected = businessScopes.includes(scope);
+                return (
+                  <button
+                    key={scope}
+                    type="button"
+                    onClick={() => toggleBusinessScope(scope)}
+                    className={`inline-flex items-center gap-1 rounded-lg border px-3 py-2 font-bold cursor-pointer ${
+                      selected
+                        ? 'border-blue-200 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-500'
+                    }`}
+                  >
+                    {selected && <Check className="h-3.5 w-3.5" />}
+                    {scope}
+                  </button>
+                );
+              })}
             </div>
+          </section>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">客户电话:</label>
-                <input
-                  type="text"
-                  placeholder="请输入客户电话"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">所属地区:</label>
-                <select
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="北京-北京-朝阳">北京-北京-朝阳</option>
-                  <option value="北京-北京-海淀">北京-北京-海淀</option>
-                  <option value="上海-上海-浦东">上海-上海-浦东</option>
-                  <option value="广东-广州-天河">广东-广州-天河</option>
-                  <option value="广东-深圳-南山">广东-深圳-南山</option>
-                  <option value="浙江-杭州-滨江">浙江-杭州-滨江</option>
-                  <option value="福建-厦门-思明">福建-厦门-思明</option>
-                  <option value="江苏-南京-建邺">江苏-南京-建邺</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">详细地址:</label>
-                <input
-                  type="text"
-                  placeholder="请输入详细地址"
-                  value={detailAddress}
-                  onChange={(e) => setDetailAddress(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">客户来源:</label>
-                <select
-                  value={source}
-                  onChange={(e) => setSource(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="上门用户">上门用户</option>
-                  <option value="朋友推荐">朋友推荐</option>
-                  <option value="广告投放">广告投放</option>
-                  <option value="渠道介绍">渠道介绍</option>
-                  <option value="装修公司">装修公司</option>
-                  <option value="其他">其他</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">客户类别:</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as CustomerType)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="家装客户">家装客户</option>
-                  <option value="工装客户">工装客户</option>
-                  <option value="别墅项目">别墅项目</option>
-                  <option value="大平层">大平层</option>
-                  <option value="展示厅">展示厅</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">家装设计师:</label>
-                <input
-                  type="text"
-                  placeholder="请输入家装设计师"
-                  value={designer}
-                  onChange={(e) => setDesigner(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">销售顾问:</label>
-                <select
-                  value={salesperson}
-                  onChange={(e) => setSalesperson(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="卫科帆">卫科帆</option>
-                  <option value="李明">李明</option>
-                  <option value="王工">王工</option>
-                  <option value="陈工">陈工</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">初次接触时间:</label>
-                <input
-                  type="date"
-                  value={firstContactDate}
-                  onChange={(e) => setFirstContactDate(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">合同开始时间:</label>
+          <section className="border-t border-slate-100 pt-4">
+            <div className="mb-3 flex items-center gap-2 text-[11px] font-extrabold text-slate-900">
+              <FileText className="h-4 w-4 text-emerald-600" />
+              合同与赠送
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">合同签约时间</span>
                 <input
                   type="date"
                   value={contractStartDate}
-                  onChange={(e) => setContractStartDate(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
+                  onChange={(event) => setContractStartDate(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
                 />
-                <p className="mt-1 text-[10px] text-slate-400">
-                  系统自动按 {contractMonths} 个月计算合同结束时间
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">房屋面积 (㎡):</label>
+              </label>
+              <label className="space-y-1">
+                <span className="font-bold text-slate-700">合同结束时间</span>
                 <input
-                  type="number"
-                  placeholder="请输入房屋面积"
-                  value={houseArea}
-                  onChange={(e) => setHouseArea(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
+                  type="date"
+                  value={contractEndDate}
+                  onChange={(event) => setContractEndDate(event.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
                 />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">房屋户型:</label>
-                <select
-                  value={houseLayout}
-                  onChange={(e) => setHouseLayout(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="两室两厅">两室两厅</option>
-                  <option value="三室两厅">三室两厅</option>
-                  <option value="四室两厅">四室两厅</option>
-                  <option value="跃层复式">跃层复式</option>
-                  <option value="独栋别墅">独栋别墅</option>
-                  <option value="其他">其他</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">关联渠道:</label>
-                <select
-                  value={channel}
-                  onChange={(e) => setChannel(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="暂无">暂无</option>
-                  <option value="居然之家">居然之家</option>
-                  <option value="红星美凯龙">红星美凯龙</option>
-                  <option value="圣都家装">圣都家装</option>
-                  <option value="独立设计师联盟">独立设计师联盟</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">客户需求:</label>
-                <input
-                  type="text"
-                  placeholder="请输入客户需求"
-                  value={requirement}
-                  onChange={(e) => setRequirement(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">备注:</label>
-                <input
-                  type="text"
-                  placeholder="请输入备注"
-                  value={remark}
-                  onChange={(e) => setRemark(e.target.value)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-medium mb-1">价格等级:</label>
-                <select
-                  value={priceGrade}
-                  onChange={(e) => setPriceGrade(e.target.value as PriceGrade)}
-                  className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg px-3 py-2 text-slate-900 outline-none cursor-pointer"
-                >
-                  <option value="普通级别">普通级别</option>
-                  <option value="高端级别">高端级别</option>
-                  <option value="尊享级别">尊享级别</option>
-                </select>
-              </div>
+              </label>
             </div>
 
-            {/* 附件 */}
-            <div className="mt-4">
-              <label className="block text-slate-700 font-medium mb-1.5">附件:</label>
-              <div className="w-16 h-16 rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 flex flex-col items-center justify-center text-slate-400 hover:text-blue-600 transition-colors cursor-pointer bg-slate-50">
-                <Plus className="w-5 h-5" />
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="font-bold text-slate-700">合同附件</span>
+                  <label className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer">
+                    <Upload className="h-3 w-3" />
+                    上传附件
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                      onChange={handleAttachmentUpload}
+                      className="sr-only"
+                    />
+                  </label>
+                </div>
+                {contractAttachments.length === 0 ? (
+                  <p className="py-3 text-center text-[10px] text-slate-400">支持图片、PDF、Word、Excel</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {contractAttachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-2.5 py-2"
+                      >
+                        <span className="truncate text-[10px] font-semibold text-slate-700">
+                          {attachment.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setContractAttachments((items) =>
+                              items.filter((item) => item.id !== attachment.id),
+                            )
+                          }
+                          className="text-slate-400 hover:text-rose-500 cursor-pointer"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+              <label className="space-y-1">
+                <span className="flex items-center gap-1 font-bold text-slate-700">
+                  <Gift className="h-3.5 w-3.5 text-amber-500" />
+                  赠送内容
+                </span>
+                <textarea
+                  rows={5}
+                  value={giftDescription}
+                  onChange={(event) => setGiftDescription(event.target.value)}
+                  placeholder="填写赠送的代金券、产品、数量等"
+                  className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 leading-relaxed outline-none focus:border-blue-500"
+                />
+              </label>
             </div>
-          </div>
+          </section>
 
-          {/* Modal Footer */}
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <section className="border-t border-slate-100 pt-4">
+            <label className="space-y-1">
+              <span className="font-bold text-slate-700">备注</span>
+              <textarea
+                rows={3}
+                value={remark}
+                onChange={(event) => setRemark(event.target.value)}
+                placeholder="填写其他需要记录的信息"
+                className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 leading-relaxed outline-none focus:border-blue-500"
+              />
+            </label>
+          </section>
+
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium cursor-pointer"
+              className="rounded-lg border border-slate-300 px-5 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer"
+              className="rounded-lg bg-blue-600 px-6 py-2 font-bold text-white hover:bg-blue-700 cursor-pointer"
             >
-              确定
+              保存经销商
             </button>
           </div>
         </form>

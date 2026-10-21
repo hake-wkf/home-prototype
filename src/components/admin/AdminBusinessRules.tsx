@@ -38,6 +38,36 @@ const DEFAULT_PROMOTIONS: PromotionActivity[] = [
     startDate: '2026-10-01',
     endDate: '2026-12-31',
   },
+  {
+    id: 'promo_curtain_3',
+    name: '智能窗帘电机满赠',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'quantity',
+    conditionCategory: '智能窗帘/电机',
+    conditionValue: 3,
+    rewardProductId: 'gift_sensor_1',
+    rewardProductName: '人体传感器（赠品）',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
+  {
+    id: 'promo_amount_30000',
+    name: '全屋方案满额赠礼',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'amount',
+    conditionCategory: '全屋智能',
+    conditionValue: 30000,
+    rewardProductId: 'gift_scene_1',
+    rewardProductName: '智能场景面板（赠品）',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
 ];
 
 const DEFAULT_RULES: BusinessRuleSettings = {
@@ -62,9 +92,13 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
   onShowToast,
 }) => {
   const [activeTab, setActiveTab] = useState<'promotion' | 'shipping' | 'renewal'>('promotion');
-  const [promotions, setPromotions] = useState<PromotionActivity[]>(() =>
-    readStorage(PROMOTION_KEY, DEFAULT_PROMOTIONS),
-  );
+  const [promotions, setPromotions] = useState<PromotionActivity[]>(() => {
+    const stored = readStorage(PROMOTION_KEY, DEFAULT_PROMOTIONS);
+    if (stored.length === 1 && stored[0].id === 'promo_switch_10') {
+      return [...stored, ...DEFAULT_PROMOTIONS.slice(1)];
+    }
+    return stored;
+  });
   const [rules, setRules] = useState<BusinessRuleSettings>(() =>
     readStorage(RULE_KEY, DEFAULT_RULES),
   );
@@ -121,7 +155,7 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
       startDate: '2026-10-20',
       endDate: '2026-12-31',
     });
-    onShowToast('促销活动已创建');
+    onShowToast('营销活动已创建');
   };
 
   return (
@@ -131,7 +165,7 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
           <div>
             <h2 className="text-lg font-black text-slate-900">业务规则中心</h2>
             <p className="mt-1 text-xs text-slate-500">
-              配置促销赠品、运费门槛、合同续约提醒与客户适用范围。
+              配置营销赠品、运费门槛、合同续约提醒与客户适用范围。
             </p>
           </div>
           <button
@@ -146,7 +180,7 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
 
       <div className="grid grid-cols-3 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
         {[
-          { key: 'promotion' as const, label: '促销活动', icon: Gift },
+          { key: 'promotion' as const, label: '营销活动', icon: Gift },
           { key: 'shipping' as const, label: '运费规则', icon: Truck },
           { key: 'renewal' as const, label: '续约提醒', icon: CalendarClock },
         ].map((tab) => {
@@ -172,8 +206,8 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">促销活动列表</h3>
-              <p className="mt-1 text-[11px] text-slate-500">满足条件后由客户在方案产品清单中手动领取赠品。</p>
+              <h3 className="text-sm font-bold text-slate-900">营销活动列表</h3>
+              <p className="mt-1 text-[11px] text-slate-500">满足条件后奖品会自动进入方案奖品栏，无需客户手动领取。</p>
             </div>
             <button
               onClick={() => setIsCreateOpen(true)}
@@ -334,7 +368,7 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
             <div className="flex items-center justify-between bg-slate-900 px-5 py-4 text-white">
               <div className="flex items-center gap-2">
                 <Gift className="h-4 w-4 text-amber-400" />
-                <h3 className="text-sm font-bold">新建促销活动</h3>
+                <h3 className="text-sm font-bold">新建营销活动</h3>
               </div>
               <button onClick={() => setIsCreateOpen(false)} className="cursor-pointer text-slate-400 hover:text-white">
                 <X className="h-4 w-4" />

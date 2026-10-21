@@ -3,7 +3,6 @@ import { AdminStorageManager } from '../utils/adminStorage';
 import {
   ArrowLeft,
   Share2,
-  Sparkles,
   ChevronRight,
   ChevronDown,
   Search,
@@ -32,6 +31,7 @@ import {
   Save,
   Maximize2,
   Upload,
+  Gift,
 } from 'lucide-react';
 import {
   RenovationProject,
@@ -109,12 +109,41 @@ const DEFAULT_PROMOTIONS: PromotionActivity[] = [
     startDate: '2026-10-01',
     endDate: '2026-12-31',
   },
+  {
+    id: 'promo_curtain_3',
+    name: '智能窗帘电机满赠',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'quantity',
+    conditionCategory: '智能窗帘/电机',
+    conditionValue: 3,
+    rewardProductId: 'gift_sensor_1',
+    rewardProductName: '人体传感器（赠品）',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
+  {
+    id: 'promo_amount_30000',
+    name: '全屋方案满额赠礼',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'amount',
+    conditionCategory: '全屋智能',
+    conditionValue: 30000,
+    rewardProductId: 'gift_scene_1',
+    rewardProductName: '智能场景面板（赠品）',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
 ];
 
 type PromotionProgress = PromotionActivity & {
   progress: number;
   qualified: boolean;
-  claimed: boolean;
 };
 
 export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
@@ -585,10 +614,14 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
     [currentProfile.id, currentCustomer?.id].filter(Boolean),
   );
   const today = new Date().toISOString().slice(0, 10);
-  const activePromotions: PromotionProgress[] = (() => {
+  const promotionProgressList: PromotionProgress[] = (() => {
     try {
       const stored = localStorage.getItem('zhijia_admin_promotions_v1');
-      return (stored ? JSON.parse(stored) : DEFAULT_PROMOTIONS) as PromotionActivity[];
+      const items = (stored ? JSON.parse(stored) : DEFAULT_PROMOTIONS) as PromotionActivity[];
+      if (items.length === 1 && items[0].id === 'promo_switch_10') {
+        return [...items, ...DEFAULT_PROMOTIONS.slice(1)];
+      }
+      return items;
     } catch {
       return DEFAULT_PROMOTIONS;
     }
@@ -612,6 +645,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
           categoryTokens.some(
             (token) =>
               item.category.includes(token) ||
+              item.brand.includes(token) ||
               item.model.includes(token) ||
               item.description.includes(token),
           ),
@@ -620,21 +654,13 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
         promotion.conditionType === 'quantity'
           ? matchedCategoryItems.reduce((sum, item) => sum + item.qty, 0)
           : baseTotalCost;
-      const claimed = deviceItems.some(
-        (item) =>
-          item.isGift && item.id.startsWith(`gift_${promotion.id}`),
-      );
       return {
         ...promotion,
         progress,
         qualified: progress >= promotion.conditionValue,
-        claimed,
       };
     });
-  const applicablePromotion = activePromotions[0];
-  const promotionProgress = applicablePromotion?.progress ?? 0;
-  const promotionQualified = applicablePromotion?.qualified ?? false;
-  const promotionGiftClaimed = applicablePromotion?.claimed ?? false;
+  const automaticRewards = promotionProgressList.filter((promotion) => promotion.qualified);
   const businessRules = (() => {
     try {
       const stored = localStorage.getItem('zhijia_admin_business_rules_v1');
@@ -666,27 +692,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
     shippingFee === 0
       ? `满 ¥${businessRules.shippingThreshold.toLocaleString()} 已包邮`
       : `未满 ¥${businessRules.shippingThreshold.toLocaleString()}，需支付运费 ¥${shippingFee}`;
-
-  const handleClaimPromotionGift = (promotion: PromotionProgress) => {
-    if (!promotion.qualified || promotion.claimed) return;
-    setDeviceItems((items) => [
-      ...items,
-      {
-        id: `gift_${promotion.id}_${Date.now()}`,
-        brand: '活动赠品',
-        category: '赠品',
-        model: promotion.rewardProductName,
-        description: `满足【${promotion.name}】条件，手动领取赠品`,
-        unit: '个',
-        qty: promotion.rewardQuantity,
-        unitPrice: 0,
-        imageUrl: '',
-        roomName: '活动赠品',
-        supplyType: 'self',
-        isGift: true,
-      },
-    ]);
-  };
 
   // Active rooms for breakdown
   const activeRooms = project.rooms.length > 0 ? project.rooms : [
@@ -1723,97 +1728,74 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
         )}
       </div>
 
-      {applicablePromotion && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-2xs">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-900">
-                <Sparkles className="h-4 w-4" />
-                {applicablePromotion.name}
+      {promotionProgressList.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-2xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <Gift className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-xs font-extrabold text-slate-900">活动奖品栏</p>
+                <p className="mt-0.5 text-[9px] text-slate-400">
+                  满足条件自动加入，无需手动领取
+                </p>
               </div>
-              <p className="mt-1 text-[11px] text-amber-700">
-                {promotionQualified
-                  ? `已满足条件，可领取 ${applicablePromotion.rewardProductName} × ${applicablePromotion.rewardQuantity}`
-                  : `再满足 ${applicablePromotion.conditionValue - promotionProgress} ${
-                      applicablePromotion.conditionType === 'quantity' ? '件' : '元'
-                    }即可领取赠品`}
-              </p>
             </div>
-            <button
-              type="button"
-              disabled={!promotionQualified || promotionGiftClaimed}
-              onClick={() =>
-                applicablePromotion && handleClaimPromotionGift(applicablePromotion)
-              }
-              className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold ${
-                promotionGiftClaimed
-                  ? 'bg-slate-200 text-slate-500'
-                  : promotionQualified
-                    ? 'bg-amber-500 text-white hover:bg-amber-600 cursor-pointer'
-                    : 'bg-white text-amber-500 border border-amber-200'
-              }`}
-            >
-              {promotionGiftClaimed ? '已领取' : '手动领取赠品'}
-            </button>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
+              已获得 {automaticRewards.reduce((sum, item) => sum + item.rewardQuantity, 0)} 件
+            </span>
           </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-amber-100">
-            <div
-              className="h-full rounded-full bg-amber-500"
-              style={{
-                width: `${Math.min(100, (promotionProgress / applicablePromotion.conditionValue) * 100)}%`,
-              }}
-            />
+
+          <div className="mt-3 space-y-2">
+            {promotionProgressList.map((promotion) => {
+              const remaining = Math.max(0, promotion.conditionValue - promotion.progress);
+              const percent = Math.min(
+                100,
+                (promotion.progress / Math.max(1, promotion.conditionValue)) * 100,
+              );
+              return (
+                <div
+                  key={promotion.id}
+                  className={`rounded-xl border p-3 ${
+                    promotion.qualified
+                      ? 'border-emerald-200 bg-emerald-50/70'
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={`text-[11px] font-extrabold ${promotion.qualified ? 'text-emerald-800' : 'text-slate-800'}`}>
+                        {promotion.qualified
+                          ? `${promotion.rewardProductName} × ${promotion.rewardQuantity}`
+                          : promotion.name}
+                      </p>
+                      <p className={`mt-0.5 text-[9px] ${promotion.qualified ? 'text-emerald-600' : 'text-slate-500'}`}>
+                        {promotion.qualified
+                          ? '已自动放入奖品栏，金额 ¥0'
+                          : `还差 ${remaining} ${promotion.conditionType === 'quantity' ? '件' : '元'}即可获得 ${promotion.rewardProductName}`}
+                      </p>
+                    </div>
+                    {promotion.qualified && (
+                      <span className="shrink-0 rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-bold text-white">
+                        已满足
+                      </span>
+                    )}
+                  </div>
+                  {!promotion.qualified && (
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full bg-amber-500 transition-all"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
-
-      {activePromotions.slice(1).map((promotion) => (
-        <div
-          key={promotion.id}
-          className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-2xs"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-900">
-                <Sparkles className="h-4 w-4" />
-                {promotion.name}
-              </div>
-              <p className="mt-1 text-[11px] text-amber-700">
-                {promotion.qualified
-                  ? `已满足条件，可领取 ${promotion.rewardProductName} × ${promotion.rewardQuantity}`
-                  : `再满足 ${Math.max(0, promotion.conditionValue - promotion.progress)} ${
-                      promotion.conditionType === 'quantity' ? '件' : '元'
-                    }即可领取赠品`}
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={!promotion.qualified || promotion.claimed}
-              onClick={() => handleClaimPromotionGift(promotion)}
-              className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold ${
-                promotion.claimed
-                  ? 'bg-slate-200 text-slate-500'
-                  : promotion.qualified
-                    ? 'bg-amber-500 text-white hover:bg-amber-600 cursor-pointer'
-                    : 'bg-white text-amber-500 border border-amber-200'
-              }`}
-            >
-              {promotion.claimed ? '已领取' : '手动领取赠品'}
-            </button>
-          </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-amber-100">
-            <div
-              className="h-full rounded-full bg-amber-500"
-              style={{
-                width: `${Math.min(
-                  100,
-                  (promotion.progress / Math.max(1, promotion.conditionValue)) * 100,
-                )}%`,
-              }}
-            />
-          </div>
-        </div>
-      ))}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
         <div className="flex items-center justify-between gap-3">
@@ -1949,12 +1931,11 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                     externalAmount: externalProductAmount,
                     shippingFee,
                     shippingPolicyLabel,
-                    promotionGifts: deviceItems
-                      .filter((item) => item.isGift)
+                    promotionGifts: automaticRewards
                       .map((item) => ({
-                        productId: item.id,
-                        productName: item.model,
-                        quantity: item.qty,
+                        productId: item.rewardProductId,
+                        productName: item.rewardProductName,
+                        quantity: item.rewardQuantity,
                         unitPrice: 0,
                       })),
                   })

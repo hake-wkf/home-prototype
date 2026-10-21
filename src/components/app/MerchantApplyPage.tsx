@@ -100,9 +100,9 @@ export const MerchantApplyPage: React.FC<MerchantApplyPageProps> = ({
         name: name.trim(),
         projectName: `${name.trim()}的智能项目`,
         phone: phone.trim(),
-        followUpStatus: '待商务审核',
+        followUpStatus: '待招商经理审核',
         priceGrade: '高端级别',
-        salesperson: '待指派专属商务',
+        salesperson: '待指派专属招商经理',
         creator: '商户入驻申请',
         createdAt:
           existingIndex >= 0 ? existingCustomers[existingIndex].createdAt : nowTime,
@@ -127,8 +127,8 @@ export const MerchantApplyPage: React.FC<MerchantApplyPageProps> = ({
       console.error(err);
     }
 
-    // 提示: 将尽快安排商务审核!
-    showToast('将尽快安排商务审核!');
+    // 提示: 将尽快安排招商经理审核!
+    showToast('将尽快安排招商经理审核!');
     setIsSubmittedSuccess(true);
     if (onApplySuccess) {
       onApplySuccess();
@@ -201,9 +201,9 @@ export const MerchantApplyPage: React.FC<MerchantApplyPageProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <h2 className="text-lg font-black text-slate-900">将尽快安排商务审核!</h2>
+              <h2 className="text-lg font-black text-slate-900">将尽快安排招商经理审核!</h2>
               <p className="text-xs text-slate-500 leading-relaxed px-3">
-                您的入驻申请资料已提交成功。专属商务经理将在 1 个工作日内与您联系并为您开通全屋定制权限。
+                您的入驻申请资料已提交成功。专属招商经理将在 1 个工作日内与您联系并为您开通全屋定制权限。
               </p>
             </div>
 
@@ -225,7 +225,7 @@ export const MerchantApplyPage: React.FC<MerchantApplyPageProps> = ({
               <div className="flex justify-between items-center text-slate-600">
                 <span>审核状态:</span>
                 <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[11px]">
-                  待商务审核
+                  待招商经理审核
                 </span>
               </div>
             </div>
@@ -244,7 +244,7 @@ export const MerchantApplyPage: React.FC<MerchantApplyPageProps> = ({
             <div className="space-y-1 pb-1 border-b border-slate-100">
               <h2 className="text-base font-bold text-slate-900">填写商户入驻信息</h2>
               <p className="text-[11px] text-slate-400">
-                认证后可解锁全屋方案算量与专属商务对接服务
+                认证后可解锁全屋方案算量与专属招商经理对接服务
               </p>
             </div>
 
@@ -257,7 +257,7 @@ export const MerchantApplyPage: React.FC<MerchantApplyPageProps> = ({
                     <span>手机号码</span>
                     <span className="text-rose-500">*</span>
                   </span>
-                  <span className="text-[10px] text-slate-400">用于登录与商务对接</span>
+                  <span className="text-[10px] text-slate-400">用于登录与招商经理对接</span>
                 </label>
                 <div className="h-12 bg-slate-50 border border-slate-200 rounded-xl px-3 flex items-center focus-within:border-slate-900 focus-within:bg-white transition-all shadow-2xs">
                   <span className="text-xs font-bold text-slate-400 font-mono pr-2.5 border-r border-slate-200 shrink-0">

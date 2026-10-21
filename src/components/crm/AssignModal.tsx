@@ -71,7 +71,7 @@ export const AssignModal: React.FC<AssignModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block font-bold text-slate-700">负责商务</label>
+              <label className="mb-1 block font-bold text-slate-700">负责招商经理</label>
               <select
                 value={business}
                 onChange={(event) => setBusiness(event.target.value)}

@@ -87,7 +87,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
     setAuditAction(action);
     setAuditFeedback(
       action === 'approve'
-        ? '方案清单、点位与预算已核验通过，可进入商务报价与履约流程。'
+        ? '方案清单、点位与预算已核验通过，可进入招商经理报价与履约流程。'
         : '方案信息需补充，请客户确认后重新提交审核。',
     );
   };
@@ -140,7 +140,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
       planAuditReviewer: '卫科帆',
       planAuditedAt: now,
       orderStatus: approved ? 'reviewing' : 'contact_sales',
-      orderStatusLabel: approved ? '审核通过，待商务报价' : '审核驳回，待客户修改',
+      orderStatusLabel: approved ? '审核通过，待招商经理报价' : '审核驳回，待客户修改',
       logisticsInfo: auditPlan.logisticsInfo
         ? { ...auditPlan.logisticsInfo, timeline: nextTimeline }
         : auditPlan.logisticsInfo,
@@ -367,11 +367,11 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                           ) : plan.orderStatus === 'reviewing' ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                               <Clock className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                              <span>商务审核中</span>
+                              <span>招商经理审核中</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                              <span>待联系商务</span>
+                              <span>待联系招商经理</span>
                             </span>
                           )}
                         </div>
@@ -790,7 +790,7 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {(activeLogisticsPlan.logisticsInfo?.timeline || [
                         { stepNumber: 1, title: '1. 客户提交采购需求', description: '客户已提交完整方案与清单', time: activeLogisticsPlan.createdAt || '已提交', done: true },
-                        { stepNumber: 2, title: '2. 方案与商务审核', description: activeLogisticsPlan.planAuditFeedback || '后台审核方案、预算和客户信息', time: activeLogisticsPlan.planAuditedAt || '处理中', done: getPlanAuditStatus(activeLogisticsPlan) !== 'pending' },
+                        { stepNumber: 2, title: '2. 方案与招商经理审核', description: activeLogisticsPlan.planAuditFeedback || '后台审核方案、预算和客户信息', time: activeLogisticsPlan.planAuditedAt || '处理中', done: getPlanAuditStatus(activeLogisticsPlan) !== 'pending' },
                         { stepNumber: 3, title: '3. 设备出库发货', description: '仓库配货后交由承运商配送', time: activeLogisticsPlan.logisticsInfo?.shippingDate || '待发货', done: activeLogisticsPlan.orderStatus === 'shipping' || activeLogisticsPlan.orderStatus === 'delivered' },
                         { stepNumber: 4, title: '4. 签收与上门联调', description: '客户验收设备并完成现场调试', time: activeLogisticsPlan.logisticsInfo?.deliveredDate || '待验收', done: activeLogisticsPlan.orderStatus === 'delivered' },
                       ]).map((node, index) => (

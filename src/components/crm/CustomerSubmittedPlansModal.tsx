@@ -136,21 +136,21 @@ const buildTrackingRows = (plan: SavedPlanRecord) => {
         : [];
   return [
     {
-      title: '1. 提交商务对接',
+      title: '1. 提交招商经理对接',
       time: plan.contactedBusinessAt || submitNode?.time || plan.createdAt,
-      description: '客户提交方案、产品清单和收货信息，进入商务对接',
+      description: '客户提交方案、产品清单和收货信息，进入招商经理对接',
       done: Boolean(plan.contactedBusinessAt || submitNode?.done),
     },
     {
-      title: '2. 商务审核通过',
-      time: businessAuditNode?.time || plan.planAuditedAt || '待商务审核',
-      description: businessAuditNode?.description || plan.planAuditFeedback || '商务核验方案、设备清单与报价',
+      title: '2. 招商经理审核通过',
+      time: businessAuditNode?.time || plan.planAuditedAt || '待招商经理审核',
+      description: businessAuditNode?.description || plan.planAuditFeedback || '招商经理核验方案、设备清单与报价',
       done: Boolean(businessAuditNode?.done || shippingDone),
     },
     {
       title: '3. ERP审核',
       time: plan.erpAuditedAt || (shippingDone ? plan.logisticsInfo?.shippingDate || shippingNode?.time || '已完成' : '待ERP审核'),
-      description: shippingDone ? 'ERP系统审核通过，已生成采购与发货任务' : '商务审核通过后进入ERP审核',
+      description: shippingDone ? 'ERP系统审核通过，已生成采购与发货任务' : '招商经理审核通过后进入ERP审核',
       done: shippingDone,
     },
     {
@@ -238,12 +238,12 @@ export const CustomerSubmittedPlansModal: React.FC<CustomerSubmittedPlansModalPr
       ...selectedPlan,
       planAuditStatus: approved ? 'approved' : 'rejected',
       planAuditFeedback: approved
-        ? '方案、设备清单与价格审核通过，可进入商务报价流程。'
+        ? '方案、设备清单与价格审核通过，可进入招商经理报价流程。'
         : '方案信息需调整，请客户修改后重新提交。',
       planAuditReviewer: '卫科帆',
       planAuditedAt: now,
       orderStatus: approved ? 'reviewing' : 'contact_sales',
-      orderStatusLabel: approved ? '审核通过，待商务报价' : '审核驳回，待客户修改',
+      orderStatusLabel: approved ? '审核通过，待招商经理报价' : '审核驳回，待客户修改',
       updatedAt: now,
     };
     AdminStorageManager.saveSingleSavedPlan(updated);

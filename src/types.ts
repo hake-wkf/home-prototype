@@ -155,10 +155,10 @@ export interface LayoutRoomSchemeConfig {
 }
 
 // 4-Stage Shipping and Order Tracking Status:
-// 1. 联系商务 -> 2. 商务审核中 -> 3. 已发货(订单号) -> 4. 签收
+// 1. 联系招商经理 -> 2. 招商经理审核中 -> 3. 已发货(订单号) -> 4. 签收
 export type OrderShippingStatus =
-  | 'contact_sales' // 1. 联系商务 (待联系 / 草稿)
-  | 'reviewing' // 2. 商务审核中 (商务核价与审核)
+  | 'contact_sales' // 1. 联系招商经理 (待联系 / 草稿)
+  | 'reviewing' // 2. 招商经理审核中 (招商经理核价与审核)
   | 'shipping' // 3. 已发货(订单号) (运输中)
   | 'delivered' // 4. 签收 (已签收交付)
   | 'draft' // Alias for contact_sales
@@ -169,7 +169,7 @@ export type OrderShippingStatus =
 
 export interface ShippingTimelineNode {
   status: string;
-  stepNumber: number; // 1: 联系商务, 2: 商务审核中, 3: 已发货, 4: 签收
+  stepNumber: number; // 1: 联系招商经理, 2: 招商经理审核中, 3: 已发货, 4: 签收
   title: string;
   description: string;
   time: string;
@@ -201,11 +201,11 @@ export interface ShippingLogisticsInfo {
   recipientName: string;
   recipientPhone: string;
   shippingAddress: string;
-  businessManagerName: string; // 专属商务经理, e.g. "王经理"
+  businessManagerName: string; // 专属招商经理, e.g. "王经理"
   businessManagerPhone: string; // e.g. "186-0010-8899"
   businessManagerWechat?: string;
   notes?: string;
-  currentStepIndex: number; // 0: 联系商务, 1: 商务审核中, 2: 已发货, 3: 签收
+  currentStepIndex: number; // 0: 联系招商经理, 1: 招商经理审核中, 2: 已发货, 3: 签收
   timeline: ShippingTimelineNode[];
 }
 
@@ -218,6 +218,13 @@ export interface UserDefaultContact {
   isDefault?: boolean; // 是否默认
   tag?: string; // 标签，如 '家' | '公司' | '新房'
   createdAt?: string;
+}
+
+export interface CustomerAttachment {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
 }
 
 // User Profile
@@ -254,6 +261,14 @@ export interface UserProfile {
   contractStartDate?: string;
   contractEndDate?: string;
   renewalReminderDays?: number;
+  contractAttachments?: CustomerAttachment[];
+  giftDescription?: string;
+  operationBrands?: string;
+  annualSales?: string;
+  storeArea?: string;
+  companyStaff?: string;
+  businessScopes?: string[];
+  annualShipment?: string;
   coupons?: CustomerCoupon[]; // 用户App端已有优惠券
   defaultContacts?: UserDefaultContact[]; // 个人中心多组默认联系人与收货地址
 }
@@ -286,7 +301,7 @@ export interface BalanceAuditRequest {
   customerName: string;
   customerPhone: string;
   originalBalance: number; // 原余额
-  targetBalance: number; // 希望更改余额
+  targetBalance: number; // 回款后账户余额
   accountType?: 'deposit' | 'purchase'; // 合作保证金 / 进货款
   changeAmount: number; // 调整变动金额 (targetBalance - originalBalance)
   remark: string; // 提交备注
@@ -421,7 +436,7 @@ export interface FollowUpRecord {
   id: string;
   customerId: string;
   time: string; // e.g. "2026-08-18 16:27:16"
-  method: string; // e.g. "指派客户", "更新客户状态", "创建客户", "电话跟进", "微信沟通", "现场量房", "方案汇报", "商务洽谈"
+  method: string; // e.g. "指派客户", "更新客户状态", "创建客户", "电话跟进", "微信沟通", "现场量房", "方案汇报", "招商经理洽谈"
   matter: string; // 主要事宜
   result: string; // 跟进结果
   type: '日志' | '跟进'; // 类型
@@ -456,8 +471,8 @@ export interface Customer {
   customNotes?: string; // 客户手输记录 / 需求备忘
   auditStatus?: 'pending' | 'certified' | 'reviewing' | 'rejected' | 'approved'; // 审核状态
   auditFeedback?: string; // 审核反馈意见
-  assignedTo?: string; // 指派商务/销售顾问
-  assignedBusiness?: string; // 商务 (负责商务沟通、报价与签约)
+  assignedTo?: string; // 指派招商经理/销售顾问
+  assignedBusiness?: string; // 招商经理 (负责招商经理沟通、报价与签约)
   assignedOperations?: string; // 对应运营 (负责方案排期、交付施工与客户跟进)
   balance?: number; // 客户已有余额 (元)
   cooperationDeposit?: number; // 合作保证金 (不可用于下单)
@@ -466,6 +481,14 @@ export interface Customer {
   contractStartDate?: string;
   contractEndDate?: string;
   renewalReminderDays?: number;
+  contractAttachments?: CustomerAttachment[];
+  giftDescription?: string;
+  operationBrands?: string;
+  annualSales?: string;
+  storeArea?: string;
+  companyStaff?: string;
+  businessScopes?: string[];
+  annualShipment?: string;
   coupons?: CustomerCoupon[]; // 客户已有优惠券列表
   avatar?: string; // 客户头像
   memo?: string; // 客户便签

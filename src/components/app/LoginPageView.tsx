@@ -93,7 +93,7 @@ export const LoginPageView: React.FC<LoginPageViewProps> = ({
         customer?.createdAt ||
         new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
       auditStatus: 'approved',
-      consultantName: customer?.salesperson || '王浩 (专属商务经理)',
+      consultantName: customer?.salesperson || '王浩 (专属招商经理)',
     };
 
     AdminStorageManager.saveUserProfile(userProfile);

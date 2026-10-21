@@ -114,7 +114,7 @@ export const FinanceAuditCenter: React.FC<FinanceAuditCenterProps> = ({
             <h2 className="text-base font-extrabold text-white">财务审核中心 (余额变更审核)</h2>
           </div>
           <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-            集中审核商务与业务提交的客户余额充值、调整申请。核验原余额、希望更改余额、提交备注及银行付款截图后确认入账。
+            集中审核招商经理与业务提交的客户回款申请。核验原余额、本次回款金额、提交备注及银行付款截图后确认入账。
           </p>
         </div>
 
@@ -265,7 +265,7 @@ export const FinanceAuditCenter: React.FC<FinanceAuditCenterProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-blue-700 font-bold">希望更改余额:</span>
+                      <span className="text-blue-700 font-bold">本次回款金额:</span>
                       <span className="font-mono font-black text-blue-700 text-sm">
                         ¥{req.targetBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                       </span>
@@ -371,7 +371,7 @@ export const FinanceAuditCenter: React.FC<FinanceAuditCenterProps> = ({
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-slate-500">原余额: ¥{actionReq.originalBalance}</span>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-blue-700 font-bold">希望更改后: ¥{actionReq.targetBalance}</span>
+                  <span className="text-blue-700 font-bold">回款后余额: ¥{actionReq.targetBalance}</span>
                 </div>
               </div>
 

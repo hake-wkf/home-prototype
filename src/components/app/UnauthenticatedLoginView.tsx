@@ -110,12 +110,12 @@ export const UnauthenticatedLoginView: React.FC<UnauthenticatedLoginViewProps> =
       city: '北京市 / 朝阳区',
       communityName: isPendingAccount ? '西山壹号院' : '万科翡翠公园',
       customNotes: isPendingAccount
-        ? '新注册业主，全屋4居室计划下周量房，等待Web端后台审核指派商务。'
+        ? '新注册业主，全屋4居室计划下周量房，等待Web端后台审核指派招商经理。'
         : '老客户深度定制，全屋智能窗帘与磁吸调光已选配完成。',
       isLoggedIn: true,
       createdAt: new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
       auditStatus: isPendingAccount ? 'pending' : 'certified',
-      consultantName: isPendingAccount ? '待商务分配' : '王浩 (专属经理)',
+      consultantName: isPendingAccount ? '待招商经理分配' : '王浩 (专属经理)',
       consultantPhone: isPendingAccount ? '-' : '186-0010-8899',
     };
 
@@ -154,7 +154,7 @@ export const UnauthenticatedLoginView: React.FC<UnauthenticatedLoginViewProps> =
         phone: regPhone.trim(),
         followUpStatus: '待后台审核',
         priceGrade: '高端级别',
-        salesperson: '待指派商务',
+        salesperson: '待指派招商经理',
         creator: '客户自助注册',
         createdAt: nowTime,
         updatedAt: nowTime,
@@ -198,7 +198,7 @@ export const UnauthenticatedLoginView: React.FC<UnauthenticatedLoginViewProps> =
       communityName: community,
       customNotes:
         audit === 'pending'
-          ? '新提交注册客户，等待 Web 端后台商务核价与审核'
+          ? '新提交注册客户，等待 Web 端后台招商经理核价与审核'
           : '万科翡翠公园 3居室 KNX智能调光方案已确认',
       isLoggedIn: true,
       createdAt: '2026-08-20 10:00',
@@ -234,7 +234,7 @@ export const UnauthenticatedLoginView: React.FC<UnauthenticatedLoginViewProps> =
 
           <div className="pt-2 text-[11px] text-slate-300 flex items-center space-x-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>新客户注册后，Web 后台商务将实时接收并审核方案需求</span>
+            <span>新客户注册后，Web 后台招商经理将实时接收并审核方案需求</span>
           </div>
         </div>
       </div>

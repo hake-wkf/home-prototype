@@ -32,9 +32,7 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
     accountType === 'deposit'
       ? customer.cooperationDeposit || 0
       : customer.purchaseBalance ?? customer.balance ?? 26800;
-  const [targetBalanceInput, setTargetBalanceInput] = useState<string>(
-    String(originalBalance + 5000)
-  );
+  const [repaymentAmountInput, setRepaymentAmountInput] = useState<string>('5000');
   const [remark, setRemark] = useState('');
   const [uploadedScreenshot, setUploadedScreenshot] = useState<string>(
     'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80'
@@ -43,13 +41,14 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setTargetBalanceInput(String(originalBalance + 5000));
+    setRepaymentAmountInput('5000');
   }, [accountType]);
 
   if (!isOpen) return null;
 
-  const parsedTargetBalance = parseFloat(targetBalanceInput) || 0;
-  const changeAmount = parsedTargetBalance - originalBalance;
+  const parsedRepaymentAmount = parseFloat(repaymentAmountInput) || 0;
+  const changeAmount = parsedRepaymentAmount;
+  const targetBalance = originalBalance + parsedRepaymentAmount;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +67,7 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!remark.trim()) {
-      alert('请填写更改余额的提交备注');
+      alert('请填写本次回款的提交备注');
       return;
     }
     if (!uploadedScreenshot) {
@@ -84,19 +83,19 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
       customerName: customer.name,
       customerPhone: customer.phone,
       originalBalance,
-      targetBalance: parsedTargetBalance,
+      targetBalance,
       accountType,
       changeAmount,
       remark: remark.trim(),
       paymentProofUrl: uploadedScreenshot,
-      applicant: '卫科帆 (业务/商务人员)',
+      applicant: '卫科帆 (业务/招商经理)',
       submittedAt: `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`,
       status: 'pending_finance',
     };
 
     AdminStorageManager.submitBalanceAdjustment(request);
     setIsSubmitting(false);
-    onSuccess(`客户【${customer.name}】余额更改申请已提交至财务审核！`);
+    onSuccess(`客户【${customer.name}】本次回款已提交至财务审核！`);
     onClose();
   };
 
@@ -187,10 +186,10 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
               <span className="text-[10px] text-slate-400 block">当前系统已存</span>
             </div>
 
-            {/* Target Balance Input (希望更改余额) */}
+            {/* Current repayment amount */}
             <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-1">
               <label className="text-[11px] font-extrabold text-blue-900 block">
-                希望更改金额 <span className="text-rose-500">*</span>
+                本次回款金额 <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-2.5 top-1.5 text-xs text-blue-700 font-bold">¥</span>
@@ -198,29 +197,25 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
                   type="number"
                   step="0.01"
                   required
-                  value={targetBalanceInput}
-                  onChange={(e) => setTargetBalanceInput(e.target.value)}
-                  placeholder="请输入目标余额"
+                  value={repaymentAmountInput}
+                  onChange={(e) => setRepaymentAmountInput(e.target.value)}
+                  placeholder="请输入本次回款金额"
                   className="w-full bg-white border border-blue-300 rounded-xl pl-6 pr-2 py-1 text-sm font-black font-mono text-blue-900 outline-none focus:border-blue-600"
                 />
               </div>
               <span className="text-[10px] text-blue-600 block">
-                {accountType === 'deposit' ? '财务确认后保证金生效' : '财务确认后进货款生效'}
+                财务审核通过后自动累加至当前账户
               </span>
             </div>
 
-            {/* Change Amount (差额) */}
+            {/* Balance after repayment */}
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
-              <span className="text-[11px] font-bold text-slate-500 block">变动调整差额</span>
-              <div
-                className={`text-base font-black font-mono ${
-                  changeAmount >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                }`}
-              >
-                {changeAmount >= 0 ? `+¥${changeAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}` : `-¥${Math.abs(changeAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`}
+              <span className="text-[11px] font-bold text-slate-500 block">回款后账户余额</span>
+              <div className="text-base font-black font-mono text-emerald-600">
+                ¥{targetBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
               </div>
               <span className="text-[10px] text-slate-400 block">
-                {changeAmount >= 0 ? '增加账户余额' : '扣减账户余额'}
+                原余额 + 本次回款金额
               </span>
             </div>
           </div>
@@ -235,7 +230,7 @@ export const ChangeBalanceModal: React.FC<ChangeBalanceModalProps> = ({
               rows={3}
               value={remark}
               onChange={(e) => setRemark(e.target.value)}
-              placeholder="请详细说明更改余额的原因，例如：客户通过对公账户汇入预付工程设备定金 5000 元，流水号为招行 2026082001..."
+              placeholder="请详细说明本次回款情况，例如：客户通过对公账户汇入进货款 5000 元，流水号为招行 2026082001..."
               className="w-full bg-slate-50 focus:bg-white border border-slate-300 focus:border-slate-800 rounded-xl p-3 text-xs text-slate-900 outline-none resize-none leading-relaxed"
             />
           </div>

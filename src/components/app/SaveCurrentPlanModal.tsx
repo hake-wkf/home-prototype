@@ -61,7 +61,7 @@ export const SaveCurrentPlanModal: React.FC<SaveCurrentPlanModalProps> = ({
       notes,
       status: '已确认方案',
       orderStatus: 'contact_sales',
-      orderStatusLabel: '1. 联系商务 (待提交)',
+      orderStatusLabel: '1. 联系招商经理 (待提交)',
       project: JSON.parse(JSON.stringify(project)),
     };
 

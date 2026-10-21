@@ -27,12 +27,16 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Search,
+  Gift,
+  ChevronLeft,
+  CalendarDays,
 } from 'lucide-react';
 import {
   UserProfile,
   UserDefaultContact,
   CustomerCoupon,
   BalanceTransactionRecord,
+  PromotionActivity,
 } from '../../types';
 import { AdminStorageManager } from '../../utils/adminStorage';
 
@@ -61,6 +65,54 @@ const TRANSACTION_RECORDS = [
   { id: 'tx_010', title: '背景音乐设备款', note: '订单设备款抵扣', amount: 1880, type: 'expense' as const, time: '2026-09-03 12:42' },
   { id: 'tx_011', title: '项目预存款', note: '银行转账', amount: 6000, type: 'income' as const, time: '2026-08-28 09:30' },
   { id: 'tx_012', title: '智能门锁设备款', note: '订单设备款抵扣', amount: 3499, type: 'expense' as const, time: '2026-08-20 16:08' },
+];
+
+const DEFAULT_MARKETING_PROMOTIONS: PromotionActivity[] = [
+  {
+    id: 'promo_switch_10',
+    name: '翎扬系列开关满赠',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'quantity',
+    conditionCategory: '智能面板/开关',
+    conditionValue: 10,
+    rewardProductId: 'gift_switch_1',
+    rewardProductName: '翎扬智能开关',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
+  {
+    id: 'promo_curtain_3',
+    name: '智能窗帘电机满赠',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'quantity',
+    conditionCategory: '智能窗帘/电机',
+    conditionValue: 3,
+    rewardProductId: 'gift_sensor_1',
+    rewardProductName: '人体传感器',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
+  {
+    id: 'promo_amount_30000',
+    name: '全屋方案满额赠礼',
+    enabled: true,
+    audience: 'all',
+    customerIds: [],
+    conditionType: 'amount',
+    conditionCategory: '全屋智能',
+    conditionValue: 30000,
+    rewardProductId: 'gift_scene_1',
+    rewardProductName: '智能场景面板',
+    rewardQuantity: 1,
+    startDate: '2026-10-01',
+    endDate: '2026-12-31',
+  },
 ];
 
 export const UserProfileView: React.FC<UserProfileViewProps> = ({
@@ -117,9 +169,50 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
         : 26800;
   const depositBalance = typeof user.cooperationDeposit === 'number' ? user.cooperationDeposit : 0;
   const userCoupons = Array.isArray(user.coupons) ? user.coupons : [];
+  const [promotionIndex, setPromotionIndex] = useState(0);
+  const today = new Date().toISOString().slice(0, 10);
+  const currentCustomer = AdminStorageManager.getCustomers().find(
+    (customer) => customer.id === user.id || customer.phone === user.phone,
+  );
+  const audienceIds = new Set([user.id, currentCustomer?.id].filter(Boolean));
+  const marketingPromotions = (() => {
+    try {
+      const stored = localStorage.getItem('zhijia_admin_promotions_v1');
+      const items = (stored
+        ? JSON.parse(stored)
+        : DEFAULT_MARKETING_PROMOTIONS) as PromotionActivity[];
+      const normalized =
+        items.length === 1 && items[0].id === 'promo_switch_10'
+          ? [...items, ...DEFAULT_MARKETING_PROMOTIONS.slice(1)]
+          : items;
+      return normalized.filter(
+        (promotion) =>
+          promotion.enabled &&
+          promotion.startDate <= today &&
+          promotion.endDate >= today &&
+          (promotion.audience === 'all' ||
+            promotion.customerIds.some((customerId) => audienceIds.has(customerId))),
+      );
+    } catch {
+      return DEFAULT_MARKETING_PROMOTIONS;
+    }
+  })();
   const [selectedCoupon, setSelectedCoupon] = useState<CustomerCoupon | null>(null);
   const selectedDefaultContact = contacts.find((contact) => contact.isDefault) || contacts[0];
-  const [activeTab, setActiveTab] = useState<'overview' | 'coupons' | 'contacts'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'coupons' | 'contacts' | 'promotions'
+  >('overview');
+
+  useEffect(() => {
+    if (activeTab !== 'overview' || marketingPromotions.length < 2) return;
+    const timer = window.setInterval(() => {
+      setPromotionIndex((index) => (index + 1) % marketingPromotions.length);
+    }, 4200);
+    return () => window.clearInterval(timer);
+  }, [activeTab, marketingPromotions.length]);
+
+  const currentPromotion =
+    marketingPromotions[promotionIndex % Math.max(1, marketingPromotions.length)];
   const allTransactions = [
     ...dynamicTransactions,
     ...TRANSACTION_RECORDS.map((transaction) => ({
@@ -234,11 +327,11 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
             <div className="flex items-center space-x-1.5 font-bold">
               <span>账号审核中</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800">
-                Web端后台商务待审核
+                Web端后台招商经理待审核
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              您已成功提交客户档案，后台商务经理与对应运营正在审核并对接量房排期。
+              您已成功提交客户档案，后台招商经理与对应运营正在审核并对接量房排期。
             </p>
           </div>
         </div>
@@ -285,6 +378,77 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
 
       </div>
 
+      {activeTab === 'overview' && currentPromotion && (
+        <div className="overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 shadow-2xs">
+          <div className="flex items-center justify-between border-b border-amber-100/80 px-4 py-2.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-800">
+              <Sparkles className="h-3.5 w-3.5" />
+              你有可参与的营销活动
+            </div>
+            <button
+              onClick={() => setActiveTab('promotions')}
+              className="rounded-lg bg-white/80 px-2.5 py-1 text-[10px] font-bold text-amber-700 hover:bg-white cursor-pointer"
+            >
+              查看全部
+            </button>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-3">
+            <button
+              onClick={() =>
+                setPromotionIndex((index) =>
+                  index === 0 ? marketingPromotions.length - 1 : index - 1,
+                )
+              }
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-amber-700 hover:bg-white cursor-pointer"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <Gift className="h-4 w-4 shrink-0 text-amber-600" />
+                <p className="truncate text-xs font-extrabold text-slate-900">
+                  {currentPromotion.name}
+                </p>
+              </div>
+              <p className="mt-1 truncate text-[10px] text-amber-700">
+                {currentPromotion.conditionType === 'quantity'
+                  ? `满足 ${currentPromotion.conditionCategory} ${currentPromotion.conditionValue} 件`
+                  : `订单满 ¥${currentPromotion.conditionValue.toLocaleString()}`}
+                ，赠 {currentPromotion.rewardProductName} × {currentPromotion.rewardQuantity}
+              </p>
+              <div className="mt-2 flex items-center justify-between">
+                <div className="flex gap-1">
+                  {marketingPromotions.map((promotion, index) => (
+                    <button
+                      key={promotion.id}
+                      onClick={() => setPromotionIndex(index)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                        index === promotionIndex ? 'w-5 bg-amber-500' : 'w-1.5 bg-amber-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => setActiveTab('promotions')}
+                  className="flex items-center gap-0.5 text-[10px] font-bold text-amber-700 cursor-pointer"
+                >
+                  活动列表
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() =>
+                setPromotionIndex((index) => (index + 1) % marketingPromotions.length)
+              }
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-amber-700 hover:bg-white cursor-pointer"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'overview' && (
         <div className="space-y-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
@@ -319,6 +483,51 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                 <p className="mt-1 text-[9px] text-amber-600">仅作履约保证金，不可参与下单</p>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-extrabold text-slate-900">经销商档案</p>
+                <p className="mt-1 text-[10px] text-slate-400">
+                  合同期至 {user.contractEndDate || '未设置'}
+                </p>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
+                {user.businessScopes?.length || 0} 类业务
+              </span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {[
+                { label: '经营品牌', value: user.operationBrands || '未填写' },
+                { label: '年销量', value: user.annualSales || '未填写' },
+                { label: '店面面积', value: user.storeArea || '未填写' },
+                { label: '公司人员', value: user.companyStaff || '未填写' },
+                { label: '年度出货', value: user.annualShipment || '未填写' },
+                {
+                  label: '业务范围',
+                  value: user.businessScopes?.join('、') || '未填写',
+                },
+              ].map((item) => (
+                <div key={item.label} className="rounded-xl bg-slate-50 px-3 py-2.5">
+                  <p className="text-[9px] text-slate-400">{item.label}</p>
+                  <p className="mt-1 truncate text-[11px] font-bold text-slate-800">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+            {user.giftDescription && (
+              <div className="mt-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5">
+                <p className="flex items-center gap-1 text-[9px] font-bold text-amber-700">
+                  <Gift className="h-3 w-3" />
+                  赠送内容
+                </p>
+                <p className="mt-1 text-[10px] leading-relaxed text-slate-700">
+                  {user.giftDescription}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
@@ -406,6 +615,70 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                   </button>
                 );
               })
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'promotions' && (
+        <div className="rounded-2xl border border-amber-200 bg-white p-4 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 cursor-pointer"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <div>
+                <p className="text-xs font-extrabold text-slate-900">营销活动列表</p>
+                <p className="mt-1 text-[10px] text-slate-400">
+                  满足条件后奖品自动进入方案奖品栏
+                </p>
+              </div>
+            </div>
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 font-mono text-xs font-bold text-amber-700">
+              {marketingPromotions.length} 个
+            </span>
+          </div>
+
+          <div className="mt-3 space-y-2.5">
+            {marketingPromotions.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-xs text-slate-400">
+                当前暂无可参与活动
+              </div>
+            ) : (
+              marketingPromotions.map((promotion) => (
+                <div
+                  key={promotion.id}
+                  className="rounded-xl border border-amber-100 bg-amber-50/50 p-3.5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Gift className="h-4 w-4 shrink-0 text-amber-600" />
+                        <p className="text-xs font-extrabold text-slate-900">{promotion.name}</p>
+                      </div>
+                      <p className="mt-1 text-[10px] leading-relaxed text-slate-600">
+                        {promotion.conditionType === 'quantity'
+                          ? `购买 ${promotion.conditionCategory} 满 ${promotion.conditionValue} 件`
+                          : `订单金额满 ¥${promotion.conditionValue.toLocaleString()}`}
+                        ，自动赠送 {promotion.rewardProductName} × {promotion.rewardQuantity}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">
+                      可参与
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-amber-100 pt-2 text-[9px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3" />
+                      {promotion.startDate} 至 {promotion.endDate}
+                    </span>
+                    <span>赠品金额 ¥0</span>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>

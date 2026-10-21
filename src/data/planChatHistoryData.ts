@@ -45,9 +45,9 @@ export const SAMPLE_CHAT_HISTORIES: Record<string, PlanChatMessage[]> = {
     {
       id: 'chat_001_6',
       role: 'salesperson',
-      senderName: '王浩 (专属商务经理)',
+      senderName: '王浩 (专属招商经理)',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      content: '卫先生您好！我是您的专属商务经理王浩 (186-0010-8899)。已收到您确认的 38 件智能硬件采购清单与图纸核算。我们已安排北京顺义总仓加急发货，顺丰单号 SF138982847294，预计明日派送。送达后我将带认证智能工程师上门验货并指导布线联调！',
+      content: '卫先生您好！我是您的专属招商经理王浩 (186-0010-8899)。已收到您确认的 38 件智能硬件采购清单与图纸核算。我们已安排北京顺义总仓加急发货，顺丰单号 SF138982847294，预计明日派送。送达后我将带认证智能工程师上门验货并指导布线联调！',
       timestamp: '2026-08-19 15:35',
     },
     {
@@ -147,7 +147,7 @@ export const SAMPLE_CHAT_HISTORIES: Record<string, PlanChatMessage[]> = {
     {
       id: 'chat_003_5',
       role: 'salesperson',
-      senderName: '王浩 (专属商务经理)',
+      senderName: '王浩 (专属招商经理)',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       content: '张总您好！下周四下午我们安排技术总监陈工与您现场复测地下室强弱电走向与花园水管点位，届时携带 KNX 总线实物面板供您试色选款。',
       timestamp: '2026-08-16 17:30',
@@ -184,7 +184,7 @@ export const SAMPLE_CHAT_HISTORIES: Record<string, PlanChatMessage[]> = {
     {
       id: 'chat_004_4',
       role: 'salesperson',
-      senderName: '王浩 (专属商务经理)',
+      senderName: '王浩 (专属招商经理)',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       content: '陈女士，全部 42 件原厂包装设备已于今日上午顺丰派送到府，高级认证调试工程师已于 14:00 上门完成场景验收，灯光及人脸锁联动调试通过，质保卡已在线激活！',
       timestamp: '2026-08-15 15:30',
@@ -232,15 +232,15 @@ export function generateDefaultChatHistory(plan: Partial<SavedPlanRecord>): Plan
       senderName: `${customerName} (业主)`,
       content: plan.customerNotes
         ? `需求备忘：${plan.customerNotes}`
-        : '方案整体看起来很合理，请帮我保存清单，并安排商务经理跟进图纸复核与配送排期。',
+        : '方案整体看起来很合理，请帮我保存清单，并安排招商经理跟进图纸复核与配送排期。',
       timestamp: plan.updatedAt || '2026-08-18 10:15',
     },
     {
       id: `gen_chat_4_${Date.now()}`,
       role: 'salesperson',
-      senderName: '王浩 (专属商务经理)',
+      senderName: '王浩 (专属招商经理)',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      content: `您好，我是您的专属商务经理王浩 (186-0010-8899)。您的方案【${plan.title || community}】已进入系统，我们将为您提供从图纸审核、设备原厂顺丰直发到工程师上门联调的一站式交付服务。`,
+      content: `您好，我是您的专属招商经理王浩 (186-0010-8899)。您的方案【${plan.title || community}】已进入系统，我们将为您提供从图纸审核、设备原厂顺丰直发到工程师上门联调的一站式交付服务。`,
       timestamp: plan.updatedAt || '2026-08-18 11:00',
     },
   ];

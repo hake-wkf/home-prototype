@@ -116,7 +116,7 @@ export const getPlanStage = (plan: SavedPlanRecord): StageInfo => {
       badgeText: 'text-blue-700',
       dotBg: 'bg-blue-500',
       activeRing: 'ring-blue-200',
-      desc: '专属商务经理正在复核设备点位、工程图纸与原厂直供折扣',
+      desc: '专属招商经理正在复核设备点位、工程图纸与原厂直供折扣',
     };
   }
 
@@ -129,7 +129,7 @@ export const getPlanStage = (plan: SavedPlanRecord): StageInfo => {
     badgeText: 'text-slate-600',
     dotBg: 'bg-slate-400',
     activeRing: 'ring-slate-200',
-    desc: '点击填写收货对接信息并提交专属商务核验报价',
+    desc: '点击填写收货对接信息并提交专属招商经理核验报价',
   };
 };
 
@@ -491,8 +491,8 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       {
         status: 'reviewing',
         stepNumber: 2,
-        title: '2. 审核中 · 商务经理核价与清单确认',
-        description: '专属商务 王浩 (186-0010-8899) 已受理，正在核验图纸点位与直供折扣',
+        title: '2. 审核中 · 招商经理核价与清单确认',
+        description: '专属招商经理 王浩 (186-0010-8899) 已受理，正在核验图纸点位与直供折扣',
         time: '正在审核中...',
         done: false,
         active: true,
@@ -542,7 +542,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         recipientName: contactName || '智家用户',
         recipientPhone: contactPhone || '17696180841',
         shippingAddress: deliveryAddress || '北京市朝阳区客户指定收货地址',
-        businessManagerName: '王浩 (专属商务对接经理)',
+        businessManagerName: '王浩 (专属招商经理对接经理)',
         businessManagerPhone: '186-0010-8899',
         businessManagerWechat: 'zhijia_wanghao',
         notes: orderNotes,
@@ -588,7 +588,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         status: 'reviewing',
         stepNumber: 2,
         title: '2. 审核中 · 图纸核算与排期已通过',
-        description: '商务经理 王浩 (186-0010-8899) 已完成方案图纸复核与出库签约',
+        description: '招商经理 王浩 (186-0010-8899) 已完成方案图纸复核与出库签约',
         time: nowTime,
         done: true,
       },
@@ -626,7 +626,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         recipientName: existingLogistics?.recipientName || '卫科帆',
         recipientPhone: existingLogistics?.recipientPhone || '17696180841',
         shippingAddress: existingLogistics?.shippingAddress || '北京市朝阳区客户指定收货地址',
-        businessManagerName: existingLogistics?.businessManagerName || '王浩 (专属商务经理)',
+        businessManagerName: existingLogistics?.businessManagerName || '王浩 (专属招商经理)',
         businessManagerPhone: existingLogistics?.businessManagerPhone || '186-0010-8899',
         businessManagerWechat: existingLogistics?.businessManagerWechat || 'zhijia_wanghao',
         notes: existingLogistics?.notes || '全套智能设备保价发运',
@@ -683,7 +683,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
         recipientName: existingLogistics?.recipientName || '卫科帆',
         recipientPhone: existingLogistics?.recipientPhone || '17696180841',
         shippingAddress: existingLogistics?.shippingAddress || '北京市朝阳区客户指定收货地址',
-        businessManagerName: existingLogistics?.businessManagerName || '王浩 (专属商务经理)',
+        businessManagerName: existingLogistics?.businessManagerName || '王浩 (专属招商经理)',
         businessManagerPhone: existingLogistics?.businessManagerPhone || '186-0010-8899',
         businessManagerWechat: existingLogistics?.businessManagerWechat || 'zhijia_wanghao',
         notes: existingLogistics?.notes || '全部设备已签收完好',
@@ -1219,7 +1219,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                   <span className="px-1.5 py-0.5 bg-slate-800 text-slate-200 font-bold rounded text-[10px] border border-slate-700">
                     待对接
                   </span>
-                  <span className="text-[11px] font-bold text-slate-300">提交商务对接与核价</span>
+                  <span className="text-[11px] font-bold text-slate-300">提交招商经理对接与核价</span>
                 </div>
                 <h3 className="font-extrabold text-sm mt-0.5 text-white">{contactSalesPlan.title}</h3>
               </div>
@@ -1509,7 +1509,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                 className="flex-2 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer flex items-center justify-center space-x-1"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>确认提交商务对接</span>
+                <span>确认提交招商经理对接</span>
               </button>
             </div>
           </div>
@@ -1623,7 +1623,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                   )}
 
                   <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
-                    <span className="text-slate-500 font-medium">专属商务</span>
+                    <span className="text-slate-500 font-medium">专属招商经理</span>
                     <span className="text-slate-800 font-medium">
                       {trackingPlan.logisticsInfo.businessManagerName} (
                       {trackingPlan.logisticsInfo.businessManagerPhone})

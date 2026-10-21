@@ -142,7 +142,7 @@ export const LoginRegisterPage: React.FC<LoginRegisterPageProps> = ({
         customer?.createdAt ||
         new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
       auditStatus: customer?.auditStatus || 'approved',
-      consultantName: customer?.salesperson || '王浩 (专属商务经理)',
+      consultantName: customer?.salesperson || '王浩 (专属招商经理)',
     };
 
     AdminStorageManager.saveUserProfile(profile);
@@ -153,7 +153,7 @@ export const LoginRegisterPage: React.FC<LoginRegisterPageProps> = ({
   };
 
   // Handle Register Submit
-  // Registered info: 手机号, 验证码, 名称; 点击注册提示: 将尽快安排商务审核!
+  // Registered info: 手机号, 验证码, 名称; 点击注册提示: 将尽快安排招商经理审核!
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -181,16 +181,16 @@ export const LoginRegisterPage: React.FC<LoginRegisterPageProps> = ({
         name: regName.trim(),
         phone: regPhone.trim(),
         community: '全屋智能定制项目',
-        customNotes: `客户自助注册申请，称呼：${regName.trim()}，等待商务审核与方案对接。`,
+        customNotes: `客户自助注册申请，称呼：${regName.trim()}，等待招商经理审核与方案对接。`,
         region: '北京-朝阳',
         detailAddress: '待定',
         source: 'App端自助注册',
         projectName: '全屋智能定制项目',
         isPool: true,
         auditStatus: 'pending',
-        followUpStatus: '待后台商务审核',
+        followUpStatus: '待后台招商经理审核',
         priceGrade: '高端级别',
-        salesperson: '待指派商务经理',
+        salesperson: '待指派招商经理',
         creator: 'App注册',
         category: '家装客户',
         createdAt: nowTime,
@@ -202,8 +202,8 @@ export const LoginRegisterPage: React.FC<LoginRegisterPageProps> = ({
       console.error(err);
     }
 
-    // 提示: 将尽快安排商务审核!
-    showToast('将尽快安排商务审核!');
+    // 提示: 将尽快安排招商经理审核!
+    showToast('将尽快安排招商经理审核!');
     setRegisteredUserData({
       phone: regPhone.trim(),
       name: regName.trim(),
@@ -272,7 +272,7 @@ export const LoginRegisterPage: React.FC<LoginRegisterPageProps> = ({
           <p className="text-xs text-slate-300 font-medium drop-shadow-sm">
             {tab === 'register'
               ? '填写基本信息，开启专属全屋智能方案'
-              : '登录后即可保存方案、跟踪物流与商务审核'}
+              : '登录后即可保存方案、跟踪物流与招商经理审核'}
           </p>
         </div>
 
@@ -320,10 +320,10 @@ export const LoginRegisterPage: React.FC<LoginRegisterPageProps> = ({
 
               <div className="space-y-1.5">
                 <h3 className="text-base font-extrabold text-slate-900">
-                  将尽快安排商务审核!
+                  将尽快安排招商经理审核!
                 </h3>
                 <p className="text-xs text-slate-500 leading-relaxed px-2">
-                  您提交的客户信息已送达后台，专属商务经理正在为您核验资质与方案需求。
+                  您提交的客户信息已送达后台，专属招商经理正在为您核验资质与方案需求。
                 </p>
               </div>
 
@@ -341,7 +341,7 @@ export const LoginRegisterPage: React.FC<LoginRegisterPageProps> = ({
                 <div className="flex justify-between items-center text-slate-600">
                   <span>审核状态:</span>
                   <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[11px]">
-                    待商务审核
+                    待招商经理审核
                   </span>
                 </div>
               </div>

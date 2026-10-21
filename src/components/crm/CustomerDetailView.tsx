@@ -23,6 +23,8 @@ import {
   Phone,
   ShieldCheck,
   SlidersHorizontal,
+  Paperclip,
+  Gift,
 } from 'lucide-react';
 import { Customer, FollowUpRecord, SavedPlanRecord, CustomerCoupon, BalanceAuditRequest } from '../../types';
 import { CustomerInfoModal } from './CustomerInfoModal';
@@ -102,7 +104,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       customerId: customer.id,
       time: '2026-08-18 16:30:00',
       method: '指派客户',
-      matter: `将项目客户[${customer.projectName}] 指派给商务【${business}】、运营【${operations}】`,
+      matter: `将项目客户[${customer.projectName}] 指派给招商经理【${business}】、运营【${operations}】`,
       result: note || '已完成人员指派',
       type: '日志',
       operator: '卫科帆',
@@ -129,12 +131,12 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       ...plan,
       planAuditStatus: approved ? 'approved' : 'rejected',
       planAuditFeedback: approved
-        ? '方案审核通过，可进入商务报价与履约流程。'
+        ? '方案审核通过，可进入招商经理报价与履约流程。'
         : '方案需修改后重新提交审核。',
       planAuditReviewer: '卫科帆',
       planAuditedAt: now,
       orderStatus: approved ? 'reviewing' : 'contact_sales',
-      orderStatusLabel: approved ? '审核通过，待商务报价' : '审核驳回，待客户修改',
+      orderStatusLabel: approved ? '审核通过，待招商经理报价' : '审核驳回，待客户修改',
       updatedAt: now,
     };
     AdminStorageManager.saveSingleSavedPlan(updatedPlan);
@@ -147,7 +149,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
     const updated: Customer = {
       ...customer,
       auditStatus: 'approved',
-      auditFeedback: '客户资料审核通过，已进入商务与运营跟进。',
+      auditFeedback: '客户资料审核通过，已进入招商经理与运营跟进。',
       auditTime: now,
       auditorName: '卫科帆',
       assignedBusiness: customer.assignedBusiness || customer.assignedTo || customer.salesperson || '王浩',
@@ -161,7 +163,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       time: now,
       method: '客户审核通过',
       matter: `客户【${customer.name}】资料审核通过`,
-      result: '已进入商务与运营跟进',
+      result: '已进入招商经理与运营跟进',
       type: '日志',
       operator: '卫科帆',
     });
@@ -272,6 +274,105 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
             <span className="mt-1 block leading-relaxed text-slate-700">
               {customer.remark || customer.customNotes || '暂无备注'}
             </span>
+          </div>
+        </div>
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <h3 className="mb-3 text-xs font-extrabold text-slate-900">经销商档案</h3>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">合同签约时间</span>
+              <span className="mt-1 block font-mono font-bold text-slate-800">
+                {customer.contractStartDate || '未填写'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">合同结束时间</span>
+              <span className="mt-1 block font-mono font-bold text-slate-800">
+                {customer.contractEndDate || '未填写'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">经营品牌</span>
+              <span className="mt-1 block font-bold text-slate-800">
+                {customer.operationBrands || '未填写'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">年度出货</span>
+              <span className="mt-1 block font-bold text-slate-800">
+                {customer.annualShipment || '未填写'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">年销量</span>
+              <span className="mt-1 block font-bold text-slate-800">
+                {customer.annualSales || '未填写'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">店面面积</span>
+              <span className="mt-1 block font-bold text-slate-800">
+                {customer.storeArea || '未填写'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">公司人员</span>
+              <span className="mt-1 block font-bold text-slate-800">
+                {customer.companyStaff || '未填写'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-3">
+              <span className="block text-[10px] text-slate-400">业务范围</span>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {(customer.businessScopes || []).length > 0 ? (
+                  customer.businessScopes!.map((scope) => (
+                    <span
+                      key={scope}
+                      className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700"
+                    >
+                      {scope}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-500">未填写</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700">
+                <Gift className="h-3.5 w-3.5" />
+                赠送内容
+              </div>
+              <p className="mt-1.5 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-700">
+                {customer.giftDescription || '暂无赠送内容'}
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600">
+                <Paperclip className="h-3.5 w-3.5" />
+                合同附件
+              </div>
+              {(customer.contractAttachments || []).length > 0 ? (
+                <div className="mt-2 space-y-1.5">
+                  {customer.contractAttachments!.map((attachment) => (
+                    <a
+                      key={attachment.id}
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-50"
+                    >
+                      {attachment.name}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1.5 text-[11px] text-slate-400">暂无合同附件</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -496,12 +597,12 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
             {/* Audit History */}
             <div className="space-y-2.5">
               <span className="text-xs font-extrabold text-slate-800 block">
-                余额变更与财务审核申请记录:
+                回款与财务审核记录:
               </span>
 
               {customerAuditRequests.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-xs bg-slate-50 rounded-xl border border-slate-200">
-                  暂无提交至财务审核的余额更改记录
+                  暂无提交至财务审核的回款记录
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -513,14 +614,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-slate-900">
-                            原余额 ¥{req.originalBalance} ➔ 申请更改为 ¥{req.targetBalance}
-                          </span>
-                          <span
-                            className={`font-mono font-bold ${
-                              req.changeAmount >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                            }`}
-                          >
-                            ({req.changeAmount >= 0 ? '+' : ''}¥{req.changeAmount})
+                            原余额 ¥{req.originalBalance} · 本次回款 +¥{Math.abs(req.changeAmount)} ➔ 回款后 ¥{req.targetBalance}
                           </span>
                         </div>
 

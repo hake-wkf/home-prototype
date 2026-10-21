@@ -58,13 +58,13 @@ export const AgreementModal: React.FC<AgreementModalProps> = ({
               <section className="space-y-1.5">
                 <h4 className="font-bold text-slate-800">一、服务范围与定位</h4>
                 <p>
-                  智家平台为智能家居经销商、室内设计师、工程服务商及终端业主提供全屋智能方案设计、设备选配、BOM清单算量、物流履约及商务对接服务。
+                  智家平台为智能家居经销商、室内设计师、工程服务商及终端业主提供全屋智能方案设计、设备选配、BOM清单算量、物流履约及招商经理对接服务。
                 </p>
               </section>
               <section className="space-y-1.5">
                 <h4 className="font-bold text-slate-800">二、账号安全与入驻资质</h4>
                 <p>
-                  用户需保证所填写的手机号码及入驻资料真实有效。经销商和设计师申请入驻需经平台商务经理核验资质后方可享有专属方案折扣及项目报备保护。
+                  用户需保证所填写的手机号码及入驻资料真实有效。经销商和设计师申请入驻需经平台招商经理核验资质后方可享有专属方案折扣及项目报备保护。
                 </p>
               </section>
               <section className="space-y-1.5">
@@ -82,7 +82,7 @@ export const AgreementModal: React.FC<AgreementModalProps> = ({
               <section className="space-y-1.5">
                 <h4 className="font-bold text-slate-800">一、我们如何收集与使用信息</h4>
                 <p>
-                  为提供验证码登录、商务对接及物流履约服务，我们需要收集您的手机号码、称呼及项目城市信息。入驻申请时填写的公司与资质信息仅用于商务经理审核与对接。
+                  为提供验证码登录、招商经理对接及物流履约服务，我们需要收集您的手机号码、称呼及项目城市信息。入驻申请时填写的公司与资质信息仅用于招商经理审核与对接。
                 </p>
               </section>
               <section className="space-y-1.5">

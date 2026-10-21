@@ -110,7 +110,7 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
   const handleExport = () => {
     const csvContent =
       'data:text/csv;charset=utf-8,\uFEFF' +
-      ['序号,客户姓名,客户电话,客户小区,已有余额,已有优惠券数,上报方案数,商务经理,对应运营']
+      ['序号,客户姓名,客户电话,客户小区,已有余额,已有优惠券数,上报方案数,招商经理,对应运营']
         .concat(
           myCustomerList.map((c, i) => {
             const plans = savedPlans.filter(
@@ -208,7 +208,7 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
               className="flex items-center space-x-1 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>新增客户</span>
+              <span>新增经销商</span>
             </button>
 
             <button
@@ -236,7 +236,7 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
                 </th>
                 <th className="py-3 px-3 w-12 text-slate-500">序号</th>
                 <th className="py-3 px-4 font-bold text-slate-800">客户信息</th>
-                <th className="py-3 px-4 font-bold text-slate-800">商务 / 对应运营</th>
+                <th className="py-3 px-4 font-bold text-slate-800">招商经理 / 对应运营</th>
                 <th className="py-3 px-4 font-bold text-slate-800">客户已有余额</th>
                 <th className="py-3 px-4 font-bold text-slate-800">客户已有优惠卷</th>
                 <th className="py-3 px-4 font-bold text-slate-800">客户上报方案记录</th>
@@ -316,11 +316,11 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
                         </div>
                       </td>
 
-                      {/* 商务与运营 */}
+                      {/* 招商经理与运营 */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="space-y-1 text-xs">
                           <div className="flex items-center space-x-1">
-                            <span className="text-[10px] text-slate-400">商务:</span>
+                            <span className="text-[10px] text-slate-400">招商经理:</span>
                             <span className="font-bold text-blue-700">
                               {cust.assignedBusiness || cust.assignedTo || '王浩'}
                             </span>

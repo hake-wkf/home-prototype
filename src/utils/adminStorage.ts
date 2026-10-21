@@ -138,7 +138,7 @@ export const INITIAL_BALANCE_AUDIT_REQUESTS: BalanceAuditRequest[] = [
     changeAmount: 5000,
     remark: '客户通过企业网银对公转账二期工程设备款预付款 5000 元，申请充值增加余额',
     paymentProofUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
-    applicant: '王浩 (商务经理)',
+    applicant: '王浩 (招商经理)',
     submittedAt: '2026-08-20 10:15',
     status: 'approved',
     financeReviewer: '张财务 (财务总监)',
@@ -155,7 +155,7 @@ export const INITIAL_BALANCE_AUDIT_REQUESTS: BalanceAuditRequest[] = [
     changeAmount: 3000,
     remark: '客户补交三期灯光改造定金 3000 元，附微信商户支付交易流水凭证',
     paymentProofUrl: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=600&auto=format&fit=crop&q=80',
-    applicant: '李伟 (商务顾问)',
+    applicant: '李伟 (招商顾问)',
     submittedAt: '2026-08-20 11:30',
     status: 'pending_finance',
   },
@@ -179,6 +179,14 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   contractStartDate: '2026-01-01',
   contractEndDate: '2026-12-31',
   renewalReminderDays: 30,
+  operationBrands: '翎扬、锐捷、Aqara',
+  annualSales: '500 万元',
+  storeArea: '300 ㎡',
+  companyStaff: '20 人',
+  businessScopes: ['家装', '酒店项目', '办公项目'],
+  annualShipment: '20 万元',
+  giftDescription: '首年赠送品牌展板、开业物料及样品开关一套',
+  contractAttachments: [],
   coupons: INITIAL_COUPONS,
   defaultContacts: INITIAL_DEFAULT_CONTACTS,
 };
@@ -244,25 +252,25 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
       recipientName: '卫科帆',
       recipientPhone: '17696180841',
       shippingAddress: '北京市朝阳区万科翡翠公园 6号楼2单元1201室',
-      businessManagerName: '王浩 (专属商务经理)',
+      businessManagerName: '王浩 (专属招商经理)',
       businessManagerPhone: '186-0010-8899',
       businessManagerWechat: 'zhijia_wanghao',
       notes: '贵重智能设备，请务必当面拆箱验货，外包装均贴有防拆原厂封条',
-      currentStepIndex: 2, // 0: 联系商务, 1: 商务审核中, 2: 已发货, 3: 签收
+      currentStepIndex: 2, // 0: 联系招商经理, 1: 招商经理审核中, 2: 已发货, 3: 签收
       timeline: [
         {
           status: 'contact_sales',
           stepNumber: 1,
-          title: '1. 联系商务 · 提交采购需求',
-          description: '客户已完成 7 空间 38 件智能设备定制清单并提交专属商务对接',
+          title: '1. 联系招商经理 · 提交采购需求',
+          description: '客户已完成 7 空间 38 件智能设备定制清单并提交专属招商经理对接',
           time: '2026-08-19 15:30',
           done: true,
         },
         {
           status: 'reviewing',
           stepNumber: 2,
-          title: '2. 商务审核中 · 图纸核算与排期',
-          description: '商务经理 王浩 (186-0010-8899) 已完成方案图纸复核与出库签约',
+          title: '2. 招商经理审核中 · 图纸核算与排期',
+          description: '招商经理 王浩 (186-0010-8899) 已完成方案图纸复核与出库签约',
           time: '2026-08-19 17:00',
           done: true,
         },
@@ -325,13 +333,13 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
     notes: '全屋采用 Mesh 3.0 无线方案，高性价比快速施工交付。',
     status: '已确认方案',
     orderStatus: 'reviewing',
-    orderStatusLabel: '商务审核中 · 正在核算采购清单',
+    orderStatusLabel: '招商经理审核中 · 正在核算采购清单',
     contactedBusinessAt: '2026-08-20 09:10',
     logisticsInfo: {
       orderNumber: 'ORD20260820002',
       carrier: '待分配物流 (顺丰速运)',
       trackingNumber: '待审核出库后生成',
-      shippingDate: '待商务审核通过后出库',
+      shippingDate: '待招商经理审核通过后出库',
       estimatedArrivalDate: '预计审核后 2-3 工作日送达',
       recipientName: '李明',
       recipientPhone: '13800138000',
@@ -340,12 +348,12 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
       businessManagerPhone: '185-1122-3344',
       businessManagerWechat: 'zhijia_liming',
       notes: '需要加急排期，预留好吊顶窗帘盒尺寸',
-      currentStepIndex: 1, // 0: 联系商务, 1: 商务审核中, 2: 已发货, 3: 签收
+      currentStepIndex: 1, // 0: 联系招商经理, 1: 招商经理审核中, 2: 已发货, 3: 签收
       timeline: [
         {
           status: 'contact_sales',
           stepNumber: 1,
-          title: '1. 联系商务 · 提交采购需求',
+          title: '1. 联系招商经理 · 提交采购需求',
           description: '已指派资深方案顾问 李经理 (185-1122-3344) 负责核价与对接',
           time: '2026-08-20 09:10',
           done: true,
@@ -353,8 +361,8 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
         {
           status: 'reviewing',
           stepNumber: 2,
-          title: '2. 商务审核中 · 核验配置与原厂直供报价',
-          description: '商务经理正审核 20 件设备明细、核实零火线布线要求与专属优惠',
+          title: '2. 招商经理审核中 · 核验配置与原厂直供报价',
+          description: '招商经理正审核 20 件设备明细、核实零火线布线要求与专属优惠',
           time: '审核处理中...',
           done: false,
           active: true,
@@ -414,7 +422,7 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
     notes: '别墅分层分区设计，中央机房有线总线控制。',
     status: '草稿',
     orderStatus: 'contact_sales',
-    orderStatusLabel: '1. 联系商务 (待提交)',
+    orderStatusLabel: '1. 联系招商经理 (待提交)',
     chatHistory: SAMPLE_CHAT_HISTORIES['plan_rec_003'],
     project: {
       communityName: '中海首开拾光里',
@@ -488,16 +496,16 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
       recipientName: '卫科帆',
       recipientPhone: '17696180841',
       shippingAddress: '北京市海淀区西山壹号院 8号楼1单元1602室',
-      businessManagerName: '王浩 (专属商务经理)',
+      businessManagerName: '王浩 (专属招商经理)',
       businessManagerPhone: '186-0010-8899',
       businessManagerWechat: 'zhijia_wanghao',
       notes: '全部设备完好签收，封条完整，质保卡已生效',
-      currentStepIndex: 3, // 0: 联系商务, 1: 商务审核中, 2: 已发货, 3: 签收
+      currentStepIndex: 3, // 0: 联系招商经理, 1: 招商经理审核中, 2: 已发货, 3: 签收
       timeline: [
         {
           status: 'contact_sales',
           stepNumber: 1,
-          title: '1. 联系商务 · 提交采购需求',
+          title: '1. 联系招商经理 · 提交采购需求',
           description: '已提交 42 件大平层智能设备配置单',
           time: '2026-08-11 10:00',
           done: true,
@@ -505,8 +513,8 @@ export const INITIAL_SAVED_PLANS: SavedPlanRecord[] = [
         {
           status: 'reviewing',
           stepNumber: 2,
-          title: '2. 商务审核中 · 审核通过并锁定',
-          description: '商务经理 王浩 审核确认图纸与直供价格',
+          title: '2. 招商经理审核中 · 审核通过并锁定',
+          description: '招商经理 王浩 审核确认图纸与直供价格',
           time: '2026-08-11 16:30',
           done: true,
         },
@@ -620,11 +628,11 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     name: '张总 (高端业主)',
     projectName: '首开拾光里高端定制',
     phone: '13901018899',
-    followUpStatus: '待商务审核',
+    followUpStatus: '待招商经理审核',
     status: '意向客户',
     deliveryStatus: '未交付',
     priceGrade: '尊享级别',
-    salesperson: '王浩 (专属商务经理)',
+    salesperson: '王浩 (专属招商经理)',
     creator: '商户入驻申请',
     createdAt: '08-19 14:00',
     updatedAt: '08-19 14:00',
@@ -647,7 +655,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     status: '意向客户',
     deliveryStatus: '未交付',
     priceGrade: '高端级别',
-    salesperson: '王浩 (专属商务经理)',
+    salesperson: '王浩 (专属招商经理)',
     creator: '商户入驻申请',
     createdAt: '08-18 10:00',
     updatedAt: '08-19 11:30',
@@ -1435,8 +1443,21 @@ export class AdminStorageManager {
           contractStartDate: c.contractStartDate || '2026-01-01',
           contractEndDate: c.contractEndDate || '2026-12-31',
           renewalReminderDays: c.renewalReminderDays ?? 30,
+          contractAttachments: Array.isArray(c.contractAttachments)
+            ? c.contractAttachments
+            : [],
+          giftDescription: c.giftDescription || '',
+          operationBrands: c.operationBrands || '翎扬、锐捷、Aqara',
+          annualSales: c.annualSales || (idx === 0 ? '500 万元' : ''),
+          storeArea: c.storeArea || (idx === 0 ? '300 ㎡' : ''),
+          companyStaff: c.companyStaff || (idx === 0 ? '20 人' : ''),
+          businessScopes:
+            Array.isArray(c.businessScopes) && c.businessScopes.length > 0
+              ? c.businessScopes
+              : ['家装', '酒店项目'],
+          annualShipment: c.annualShipment || (idx === 0 ? '20 万元' : ''),
           coupons: Array.isArray(c.coupons) ? c.coupons : INITIAL_COUPONS,
-          assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属商务经理)',
+          assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属招商经理)',
           assignedOperations: c.assignedOperations || '赵敏 (交付运营专员)',
         }));
       }
@@ -1465,8 +1486,16 @@ export class AdminStorageManager {
         contractStartDate: c.contractStartDate || '2026-01-01',
         contractEndDate: c.contractEndDate || '2026-12-31',
         renewalReminderDays: c.renewalReminderDays ?? 30,
+        contractAttachments: [],
+        giftDescription: '',
+        operationBrands: '翎扬、锐捷、Aqara',
+        annualSales: idx === 0 ? '500 万元' : '',
+        storeArea: idx === 0 ? '300 ㎡' : '',
+        companyStaff: idx === 0 ? '20 人' : '',
+        businessScopes: ['家装', '酒店项目'],
+        annualShipment: idx === 0 ? '20 万元' : '',
         coupons: Array.isArray(c.coupons) ? c.coupons : INITIAL_COUPONS,
-        assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属商务经理)',
+        assignedBusiness: c.assignedBusiness || c.assignedTo || '王浩 (专属招商经理)',
         assignedOperations: c.assignedOperations || '赵敏 (交付运营专员)',
       };
     });
@@ -1722,7 +1751,7 @@ export class AdminStorageManager {
           customerId: target.id,
           time: now,
           method: '方案下单扣款',
-          matter: `方案【${plan.title}】提交商务对接，系统从进货款扣减 ¥${deductedAmount.toLocaleString()}`,
+          matter: `方案【${plan.title}】提交招商经理对接，系统从进货款扣减 ¥${deductedAmount.toLocaleString()}`,
           result: `扣款后进货款余额 ¥${remainingBalance.toLocaleString()}，合作保证金未参与支付`,
           type: '日志',
           operator: '系统自动记账',
@@ -1759,7 +1788,7 @@ export class AdminStorageManager {
       id: `fu_bal_${Date.now()}`,
       customerId: req.customerId,
       time: req.submittedAt,
-      method: '提交余额更改申请',
+      method: '提交回款申请',
       matter: `提交客户【${req.customerName}】${accountLabel}调整申请：原金额 ¥${req.originalBalance} 调整为 ¥${req.targetBalance} (变动 ${req.changeAmount >= 0 ? '+' : ''}${req.changeAmount}元)`,
       result: `申请已流转至财务部门待审核，附凭证截图及备注：${req.remark}`,
       type: '日志',
@@ -1934,6 +1963,21 @@ export class AdminStorageManager {
           contractStartDate: parsed.contractStartDate || '2026-01-01',
           contractEndDate: parsed.contractEndDate || '2026-12-31',
           renewalReminderDays: parsed.renewalReminderDays ?? 30,
+          operationBrands: parsed.operationBrands || INITIAL_USER_PROFILE.operationBrands,
+          annualSales: parsed.annualSales || INITIAL_USER_PROFILE.annualSales,
+          storeArea: parsed.storeArea || INITIAL_USER_PROFILE.storeArea,
+          companyStaff: parsed.companyStaff || INITIAL_USER_PROFILE.companyStaff,
+          businessScopes:
+            Array.isArray(parsed.businessScopes) && parsed.businessScopes.length > 0
+              ? parsed.businessScopes
+              : INITIAL_USER_PROFILE.businessScopes,
+          annualShipment:
+            parsed.annualShipment || INITIAL_USER_PROFILE.annualShipment,
+          giftDescription:
+            parsed.giftDescription || INITIAL_USER_PROFILE.giftDescription,
+          contractAttachments: Array.isArray(parsed.contractAttachments)
+            ? parsed.contractAttachments
+            : [],
           coupons: Array.isArray(parsed.coupons) ? parsed.coupons : INITIAL_COUPONS,
           defaultContacts: Array.isArray(parsed.defaultContacts) ? parsed.defaultContacts : this.getDefaultContacts(),
         };
@@ -2018,7 +2062,7 @@ export class AdminStorageManager {
       {
         status: 'contact_sales',
         stepNumber: 1,
-        title: '1. 联系商务 · 提交采购需求',
+        title: '1. 联系招商经理 · 提交采购需求',
         description: `客户【${plan.customerName || '业主'}】已完成方案清单并提交`,
         time: plan.createdAt || nowStr,
         done: true,
@@ -2035,8 +2079,8 @@ export class AdminStorageManager {
       updatedTimeline.push({
         status: 'reviewing',
         stepNumber: 2,
-        title: '2. 方案审核通过 · 商务与运营已指派',
-        description: `审核通过，专属商务【${assignedBusiness}】与运营【${assignedOperations}】已就绪${note ? ` (${note})` : ''}`,
+        title: '2. 方案审核通过 · 招商经理与运营已指派',
+        description: `审核通过，专属招商经理【${assignedBusiness}】与运营【${assignedOperations}】已就绪${note ? ` (${note})` : ''}`,
         time: nowStr,
         done: true,
         active: true,
@@ -2045,8 +2089,8 @@ export class AdminStorageManager {
       const idx = updatedTimeline.findIndex((n) => n.stepNumber === 2);
       updatedTimeline[idx] = {
         ...updatedTimeline[idx],
-        title: '2. 方案审核通过 · 商务与运营已指派',
-        description: `审核通过，专属商务【${assignedBusiness}】与运营【${assignedOperations}】已就绪${note ? ` (${note})` : ''}`,
+        title: '2. 方案审核通过 · 招商经理与运营已指派',
+        description: `审核通过，专属招商经理【${assignedBusiness}】与运营【${assignedOperations}】已就绪${note ? ` (${note})` : ''}`,
         time: nowStr,
         done: true,
         active: true,
@@ -2056,7 +2100,7 @@ export class AdminStorageManager {
     const updatedPlan: SavedPlanRecord = {
       ...plan,
       orderStatus: 'reviewing',
-      orderStatusLabel: '审核通过 (商务跟进中)',
+      orderStatusLabel: '审核通过 (招商经理跟进中)',
       consultantName: assignedBusiness,
       logisticsInfo: {
         orderNumber: plan.logisticsInfo?.orderNumber || `ORD${Date.now().toString().slice(-8)}`,
@@ -2065,7 +2109,7 @@ export class AdminStorageManager {
         trackingNumbers: plan.logisticsInfo?.trackingNumbers || [],
         packages: plan.logisticsInfo?.packages || [],
         totalProgress: 40,
-        totalProgressLabel: '方案审核通过 · 商务对接中',
+        totalProgressLabel: '方案审核通过 · 招商经理对接中',
         shippingDate: plan.logisticsInfo?.shippingDate || '待排期',
         estimatedArrivalDate: plan.logisticsInfo?.estimatedArrivalDate || '待确认',
         recipientName: plan.customerName || '客户',
@@ -2074,7 +2118,7 @@ export class AdminStorageManager {
         businessManagerName: assignedBusiness,
         businessManagerPhone: '186-0010-8899',
         businessManagerWechat: 'zhijia_service',
-        notes: note || '方案初审通过，已指派专属商务进行现场量房与工程交底',
+        notes: note || '方案初审通过，已指派专属招商经理进行现场量房与工程交底',
         currentStepIndex: 1,
         timeline: updatedTimeline,
       },

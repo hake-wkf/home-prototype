@@ -961,7 +961,7 @@ export const AdminQuickQuoteWizard: React.FC<AdminQuickQuoteWizardProps> = ({
             <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3">
               <h4 className="text-xs font-extrabold text-slate-900 flex items-center space-x-1.5">
                 <SlidersHorizontal className="w-4 h-4 text-blue-600" />
-                <span>商务折扣与工程安装费用调节</span>
+                <span>招商经理折扣与工程安装费用调节</span>
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">

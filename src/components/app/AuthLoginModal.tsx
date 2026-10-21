@@ -185,7 +185,7 @@ export const AuthLoginModal: React.FC<AuthLoginModalProps> = ({
         customer?.createdAt ||
         new Date().toLocaleString('zh-CN', { hour12: false }).slice(0, 16),
       auditStatus: 'approved',
-      consultantName: customer?.salesperson || '王浩 (专属商务经理)',
+      consultantName: customer?.salesperson || '王浩 (专属招商经理)',
     };
 
     AdminStorageManager.saveUserProfile(userProfile);
@@ -317,7 +317,7 @@ export const AuthLoginModal: React.FC<AuthLoginModalProps> = ({
                   <div className="flex justify-between">
                     <span>当前状态:</span>
                     <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">
-                      商务核验中
+                      招商经理核验中
                     </span>
                   </div>
                 </div>
