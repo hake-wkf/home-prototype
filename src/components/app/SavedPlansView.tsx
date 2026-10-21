@@ -713,7 +713,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     <div className="space-y-3.5 animate-fadeIn pb-12">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs font-bold px-4 py-2 rounded-2xl shadow-xl flex items-center space-x-2 border border-slate-700 animate-fadeIn">
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/95 text-white text-xs font-bold px-4 py-2 rounded-2xl shadow-xl flex items-center space-x-2 border border-slate-700 animate-fadeIn">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -1499,6 +1499,14 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                   placeholder="请输入6位销售审批验证码"
                   className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 font-mono text-xs tracking-widest text-slate-900 outline-none focus:border-blue-500"
                 />
+                {approvalCodeSent && (
+                  <div className="flex items-center justify-between rounded-lg bg-white/70 px-2.5 py-1.5 text-[9px]">
+                    <span className="font-bold text-emerald-600">验证码已发送</span>
+                    <span className="font-mono font-extrabold text-slate-700">
+                      演示码：{generatedApprovalCode}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Contact Info Form */}
