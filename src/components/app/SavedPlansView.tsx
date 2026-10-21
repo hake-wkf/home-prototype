@@ -285,7 +285,13 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
   const couponEligibleYuan =
     Math.min(contactSalesPlan?.couponEligibleAmount ?? orderSubtotalYuan, orderSubtotalYuan);
   const externalAmountYuan = contactSalesPlan?.externalAmount || 0;
-  const orderShippingFee = contactSalesPlan?.shippingFee || 0;
+  const orderShippingFee = 0;
+  const shippingPolicyDisplay =
+    contactSalesPlan?.shippingPolicyLabel?.includes('未满') ||
+    contactSalesPlan?.shippingPolicyLabel?.includes('需支付') ||
+    contactSalesPlan?.shippingPolicyLabel?.includes('自费')
+      ? '未满包邮门槛，运费自费'
+      : '已满足包邮条件，免邮';
   const couponPreviewAmount = selectedOrderCoupon
     ? selectedOrderCoupon.type === 'discount'
       ? Math.max(0, couponEligibleYuan * (1 - selectedOrderCoupon.value / 10))
@@ -455,7 +461,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       : 0;
     const orderPaidAmount = Math.max(
       0,
-      originalAmountYuan - couponDiscountAmount + (contactSalesPlan.shippingFee || 0),
+      originalAmountYuan - couponDiscountAmount,
     );
     const balanceResult = AdminStorageManager.deductPurchaseBalance(
       selectedCustomer,
@@ -541,7 +547,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       purchaseBalanceDeducted: balanceResult.deductedAmount,
       creditPaymentAmount,
       balanceDeductedAt: nowTime,
-      shippingFee: contactSalesPlan.shippingFee,
+      shippingFee: 0,
       shippingPolicyLabel: contactSalesPlan.shippingPolicyLabel,
       logisticsInfo: {
         orderNumber: generatedOrderNo,
@@ -1436,7 +1442,8 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
 
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-[10px]">
                     <span className="text-slate-500">
-                      经销商价 ¥{orderSubtotalYuan.toLocaleString()} · 运费 ¥{orderShippingFee.toLocaleString()}
+                      经销商价 ¥{orderSubtotalYuan.toLocaleString()} · 运费
+                      {shippingPolicyDisplay.includes('自费') ? ' 自费' : ' 免邮'}
                     </span>
                     <span className="font-bold text-emerald-600">
                       优惠 -¥{Math.round(couponPreviewAmount).toLocaleString()} · 应付 ¥
@@ -1468,7 +1475,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                     {externalAmountYuan.toLocaleString()} 不参与优惠券。
                   </div>
                   <div className="text-[9px] text-slate-500">
-                    {contactSalesPlan.shippingPolicyLabel || (orderShippingFee === 0 ? '已满足包邮条件' : '未满足包邮条件')}
+                    {shippingPolicyDisplay}
                   </div>
                 </div>
               </div>

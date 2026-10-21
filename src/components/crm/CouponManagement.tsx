@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Ticket,
   Plus,
@@ -14,8 +14,11 @@ import {
   Check,
   Tag,
   AlertCircle,
+  Pencil,
+  Trash2,
+  History,
 } from 'lucide-react';
-import { CustomerCoupon, Customer } from '../../types';
+import { CustomerCoupon, Customer, CouponIssueRecord } from '../../types';
 import { AdminStorageManager } from '../../utils/adminStorage';
 
 interface CouponManagementProps {
@@ -32,11 +35,17 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
   const [coupons, setCoupons] = useState<CustomerCoupon[]>(() =>
     AdminStorageManager.getCoupons()
   );
+  const [activeTab, setActiveTab] = useState<'coupons' | 'records'>('coupons');
+  const [issueRecords, setIssueRecords] = useState<CouponIssueRecord[]>(() =>
+    AdminStorageManager.getCouponIssueRecords(),
+  );
+  const [recordKeyword, setRecordKeyword] = useState('');
   const [keyword, setKeyword] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'amount' | 'discount' | 'voucher'>('all');
 
   // Create Coupon Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState<'amount' | 'discount' | 'voucher'>('amount');
   const [value, setValue] = useState('1000');
@@ -50,6 +59,16 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
   const [distributeCoupon, setDistributeCoupon] = useState<CustomerCoupon | null>(null);
   const [targetCustomerId, setTargetCustomerId] = useState<string>(customers[0]?.id || '');
 
+  useEffect(() => {
+    const refreshRecords = () => {
+      setIssueRecords(AdminStorageManager.getCouponIssueRecords());
+    };
+    window.addEventListener('coupon_issue_records_updated', refreshRecords);
+    return () => {
+      window.removeEventListener('coupon_issue_records_updated', refreshRecords);
+    };
+  }, []);
+
   const filteredCoupons = coupons.filter((c) => {
     if (typeFilter !== 'all' && c.type !== typeFilter) return false;
     if (keyword.trim()) {
@@ -62,12 +81,51 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
     return true;
   });
 
+  const filteredIssueRecords = issueRecords.filter((record) => {
+    if (!recordKeyword.trim()) return true;
+    const query = recordKeyword.toLowerCase().trim();
+    return [
+      record.couponName,
+      record.couponCode || '',
+      record.customerName,
+      record.customerPhone,
+      record.operator,
+      record.issuedAt,
+    ].some((value) => value.toLowerCase().includes(query));
+  });
+
+  const resetCouponForm = () => {
+    setEditingCouponId(null);
+    setName('');
+    setType('amount');
+    setValue('1000');
+    setMinSpend('20000');
+    setStartDate('2026-08-01');
+    setEndDate('2026-12-31');
+    setCode('CPN' + Math.floor(1000 + Math.random() * 9000));
+    setDescription('签约全屋智能方案满额立减，可与特惠折扣叠加。');
+  };
+
+  const openEditCoupon = (coupon: CustomerCoupon) => {
+    setEditingCouponId(coupon.id);
+    setName(coupon.name);
+    setType(coupon.type);
+    setValue(String(coupon.value));
+    setMinSpend(String(coupon.minSpend));
+    setStartDate(coupon.validStartDate);
+    setEndDate(coupon.validEndDate);
+    setCode(coupon.code || '');
+    setDescription(coupon.description || '');
+    setIsCreateModalOpen(true);
+  };
+
   const handleCreateCoupon = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const existingCoupon = coupons.find((coupon) => coupon.id === editingCouponId);
 
     const newCoupon: CustomerCoupon = {
-      id: `cpn_${Date.now()}`,
+      id: editingCouponId || `cpn_${Date.now()}`,
       name: name.trim(),
       type,
       value: parseFloat(value) || 1000,
@@ -77,19 +135,30 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
       status: 'usable',
       code: code.trim() || 'CPN' + Math.floor(1000 + Math.random() * 9000),
       description: description.trim(),
-      createdAt: `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`,
+      createdAt:
+        existingCoupon?.createdAt ||
+        `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`,
     };
 
-    AdminStorageManager.addCoupon(newCoupon);
-    onShowToast(`优惠券【${newCoupon.name}】已成功创建！`);
+    if (editingCouponId) {
+      AdminStorageManager.updateCoupon(newCoupon);
+      onShowToast(`优惠券【${newCoupon.name}】已更新`);
+    } else {
+      AdminStorageManager.addCoupon(newCoupon);
+      onShowToast(`优惠券【${newCoupon.name}】已成功创建！`);
+    }
 
     setCoupons(AdminStorageManager.getCoupons());
     setIsCreateModalOpen(false);
-    // Reset defaults
-    setName('');
-    setValue('1000');
-    setMinSpend('20000');
-    setCode('CPN' + Math.floor(1000 + Math.random() * 9000));
+    resetCouponForm();
+    if (onRefreshData) onRefreshData();
+  };
+
+  const handleDeleteCoupon = (coupon: CustomerCoupon) => {
+    if (!window.confirm(`确定删除优惠券【${coupon.name}】吗？`)) return;
+    AdminStorageManager.deleteCoupon(coupon.id);
+    setCoupons(AdminStorageManager.getCoupons());
+    onShowToast(`优惠券【${coupon.name}】已删除`);
     if (onRefreshData) onRefreshData();
   };
 
@@ -98,7 +167,7 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
     const target = customers.find((c) => c.id === targetCustomerId);
     if (!target) return;
 
-    AdminStorageManager.issueCouponToCustomer(distributeCoupon, targetCustomerId);
+    AdminStorageManager.issueCouponToCustomer(distributeCoupon, targetCustomerId, 'coupon-center');
     onShowToast(`已向客户【${target.name}】成功发放优惠券【${distributeCoupon.name}】`);
     setDistributeCoupon(null);
     if (onRefreshData) onRefreshData();
@@ -121,7 +190,10 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
         </div>
 
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => {
+            resetCouponForm();
+            setIsCreateModalOpen(true);
+          }}
           className="flex items-center space-x-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -129,8 +201,27 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
         </button>
       </div>
 
+      <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
+        <button
+          onClick={() => setActiveTab('coupons')}
+          className={`rounded-lg py-2 text-xs font-bold cursor-pointer ${
+            activeTab === 'coupons' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          优惠券模板 ({coupons.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('records')}
+          className={`rounded-lg py-2 text-xs font-bold cursor-pointer ${
+            activeTab === 'records' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          发放记录 ({issueRecords.length})
+        </button>
+      </div>
+
       {/* Filter Row */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs space-y-3">
+      {activeTab === 'coupons' && <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
             {[
@@ -164,10 +255,10 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
             />
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Coupons Grid List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+      {activeTab === 'coupons' && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {filteredCoupons.map((c) => {
           const isDiscount = c.type === 'discount';
           const isVoucher = c.type === 'voucher';
@@ -235,22 +326,104 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-2 border-t border-slate-100 flex items-center">
+              <div className="grid grid-cols-3 gap-1.5 border-t border-slate-100 pt-2">
+                <button
+                  onClick={() => openEditCoupon(c)}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white py-1.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  <Pencil className="h-3 w-3" />
+                  编辑
+                </button>
+                <button
+                  onClick={() => handleDeleteCoupon(c)}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-rose-200 bg-rose-50 py-1.5 text-[10px] font-bold text-rose-600 hover:bg-rose-100 cursor-pointer"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  删除
+                </button>
                 <button
                   onClick={() => {
                     setDistributeCoupon(c);
                     setTargetCustomerId(customers[0]?.id || '');
                   }}
-                  className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center space-x-1"
+                  className="flex items-center justify-center gap-1 rounded-lg bg-slate-900 py-1.5 text-[10px] font-bold text-white hover:bg-slate-800 cursor-pointer"
                 >
                   <Send className="w-3 h-3 text-emerald-400" />
-                  <span>发放给客户</span>
+                  <span>发放</span>
                 </button>
               </div>
             </div>
           );
         })}
-      </div>
+      </div>}
+
+      {activeTab === 'records' && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="flex items-center gap-1.5 text-sm font-extrabold text-slate-900">
+                <History className="h-4 w-4 text-rose-500" />
+                优惠券发放记录
+              </h3>
+              <p className="mt-1 text-[10px] text-slate-400">可按优惠券、客户、手机号、操作人搜索</p>
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={recordKeyword}
+                onChange={(event) => setRecordKeyword(event.target.value)}
+                placeholder="搜索发放记录..."
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none focus:border-rose-400 focus:bg-white"
+              />
+            </div>
+          </div>
+          {filteredIssueRecords.length === 0 ? (
+            <div className="py-14 text-center text-xs text-slate-400">
+              <History className="mx-auto mb-2 h-9 w-9 text-slate-300" />
+              暂无符合条件的发放记录
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">发放时间</th>
+                    <th className="px-4 py-3 font-bold">优惠券</th>
+                    <th className="px-4 py-3 font-bold">券码</th>
+                    <th className="px-4 py-3 font-bold">领取客户</th>
+                    <th className="px-4 py-3 font-bold">操作人</th>
+                    <th className="px-4 py-3 font-bold">发放来源</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredIssueRecords.map((record) => (
+                    <tr key={record.id} className="hover:bg-rose-50/30">
+                      <td className="px-4 py-3 font-mono text-[10px] text-slate-500">{record.issuedAt}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-slate-800">{record.couponName}</p>
+                        <p className="mt-0.5 text-[9px] text-rose-600">
+                          {record.couponType === 'discount' ? `${record.couponValue}折` : `¥${record.couponValue}`}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-slate-600">{record.couponCode || '-'}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-slate-800">{record.customerName}</p>
+                        <p className="mt-0.5 font-mono text-[9px] text-slate-400">{record.customerPhone}</p>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{record.operator}</td>
+                      <td className="px-4 py-3">
+                        <span className="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-700">
+                          {record.source === 'customer-detail' ? '客户详情发放' : '优惠券中心发放'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* --------------------------------------------------------------------------- */}
       {/* Create Coupon Modal (创建优惠券弹窗) */}
@@ -263,7 +436,9 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
                 <div className="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold">
                   <Ticket className="w-4 h-4" />
                 </div>
-                <h3 className="font-extrabold text-sm">创建新优惠券</h3>
+                <h3 className="font-extrabold text-sm">
+                  {editingCouponId ? '编辑优惠券' : '创建新优惠券'}
+                </h3>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
@@ -384,7 +559,7 @@ export const CouponManagement: React.FC<CouponManagementProps> = ({
                   className="flex-2 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition-colors cursor-pointer flex items-center justify-center space-x-1"
                 >
                   <Check className="w-4 h-4 text-emerald-400" />
-                  <span>确定创建优惠券</span>
+                  <span>{editingCouponId ? '保存修改' : '确定创建优惠券'}</span>
                 </button>
               </div>
             </form>

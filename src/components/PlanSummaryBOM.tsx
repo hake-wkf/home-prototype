@@ -687,12 +687,12 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   const shippingEligibleAmount =
     selfProductAmount +
     (businessRules.externalProductsIncludeFreeShipping ? externalProductAmount : 0);
-  const shippingFee =
-    shippingEligibleAmount >= businessRules.shippingThreshold ? 0 : businessRules.shippingFee;
+  const isFreeShipping = shippingEligibleAmount >= businessRules.shippingThreshold;
+  const shippingFee = 0;
   const shippingPolicyLabel =
-    shippingFee === 0
-      ? `满 ¥${businessRules.shippingThreshold.toLocaleString()} 已包邮`
-      : `未满 ¥${businessRules.shippingThreshold.toLocaleString()}，需支付运费 ¥${shippingFee}`;
+    isFreeShipping
+      ? `满 ¥${businessRules.shippingThreshold.toLocaleString()} 免邮`
+      : `未满 ¥${businessRules.shippingThreshold.toLocaleString()}，运费自费`;
 
   // Active rooms for breakdown
   const activeRooms = project.rooms.length > 0 ? project.rooms : [
@@ -951,7 +951,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => handleQtyChange(item.id, -1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-800 hover:bg-slate-200 cursor-pointer"
+                          className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-800 shadow-2xs hover:bg-slate-200 cursor-pointer"
                         >
                           -
                         </button>
@@ -960,7 +960,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                         </span>
                         <button
                           onClick={() => handleQtyChange(item.id, 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-800 hover:bg-slate-200 cursor-pointer"
+                          className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-800 shadow-2xs hover:bg-slate-200 cursor-pointer"
                         >
                           +
                         </button>
@@ -991,7 +991,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
 
             <button
               onClick={() => setIsAddProductModalOpen(true)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-full border border-blue-500 bg-white py-3 text-sm font-extrabold text-blue-600 hover:bg-blue-50 cursor-pointer"
+              className="flex h-11 w-full items-center justify-center gap-1.5 rounded-full border border-blue-500 bg-white text-sm font-extrabold text-blue-600 hover:bg-blue-50 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               加产品

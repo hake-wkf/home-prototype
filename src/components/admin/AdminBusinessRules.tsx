@@ -141,6 +141,7 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
     createEmptyPromotion,
   );
   const [giftRecords, setGiftRecords] = useState<GiftGrantRecord[]>([]);
+  const [recordKeyword, setRecordKeyword] = useState('');
 
   useEffect(() => {
     const loadRecords = () => {
@@ -179,6 +180,19 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
     localStorage.setItem(RULE_KEY, JSON.stringify(rules));
     onShowToast('业务规则已保存');
   };
+
+  const filteredGiftRecords = giftRecords.filter((record) => {
+    if (!recordKeyword.trim()) return true;
+    const query = recordKeyword.toLowerCase().trim();
+    return [
+      record.promotionName,
+      record.productName,
+      record.customerName,
+      record.customerPhone,
+      record.planTitle,
+      record.awardedAt,
+    ].some((value) => value.toLowerCase().includes(query));
+  });
 
   const openCreatePromotion = () => {
     setEditingPromotionId(null);
@@ -361,17 +375,23 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
                 客户方案满足活动条件后自动生成发放记录
               </p>
             </div>
-            <div className="flex items-center gap-2 text-[10px]">
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-600">
-                {giftRecords.length} 笔
+            <div className="flex items-center gap-2">
+              <input
+                value={recordKeyword}
+                onChange={(event) => setRecordKeyword(event.target.value)}
+                placeholder="搜索活动、客户、手机号、赠品..."
+                className="w-56 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] outline-none focus:border-blue-400 focus:bg-white"
+              />
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                {filteredGiftRecords.length} 笔
               </span>
-              <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">
-                共送出 {giftRecords.reduce((sum, record) => sum + record.quantity, 0)} 件
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
+                共送出 {filteredGiftRecords.reduce((sum, record) => sum + record.quantity, 0)} 件
               </span>
             </div>
           </div>
 
-          {giftRecords.length === 0 ? (
+          {filteredGiftRecords.length === 0 ? (
             <div className="py-14 text-center">
               <Gift className="mx-auto h-9 w-9 text-slate-300" />
               <p className="mt-2 text-xs font-bold text-slate-600">暂无赠品发放记录</p>
@@ -391,7 +411,7 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {giftRecords.map((record) => (
+                  {filteredGiftRecords.map((record) => (
                     <tr key={record.id} className="hover:bg-emerald-50/30">
                       <td className="px-4 py-3 font-mono text-[10px] text-slate-500">
                         {record.awardedAt}
@@ -437,22 +457,13 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
             <Truck className="h-5 w-5 text-blue-600" />
             <h3 className="text-sm font-bold text-slate-900">运费规则</h3>
           </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
             <label className="space-y-1.5 text-xs">
               <span className="font-bold text-slate-700">满额包邮门槛（元）</span>
               <input
                 type="number"
                 value={rules.shippingThreshold}
                 onChange={(event) => setRules({ ...rules, shippingThreshold: Number(event.target.value) })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono outline-none focus:border-blue-500"
-              />
-            </label>
-            <label className="space-y-1.5 text-xs">
-              <span className="font-bold text-slate-700">未满门槛运费（元）</span>
-              <input
-                type="number"
-                value={rules.shippingFee}
-                onChange={(event) => setRules({ ...rules, shippingFee: Number(event.target.value) })}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono outline-none focus:border-blue-500"
               />
             </label>
@@ -472,8 +483,8 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
             </label>
           </div>
           <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3 text-[11px] leading-relaxed text-blue-800">
-            当前规则：自有产品订单满 ¥{rules.shippingThreshold.toLocaleString()} 包邮；未满收取 ¥
-            {rules.shippingFee.toLocaleString()}；影音、部分灯具、监控等外协产品不计入包邮金额。
+            当前规则：自有产品订单满 ¥{rules.shippingThreshold.toLocaleString()} 免邮；
+            未满由客户承担运费，系统不预设具体金额；影音、部分灯具、监控等外协产品不计入包邮金额。
           </div>
         </div>
       )}

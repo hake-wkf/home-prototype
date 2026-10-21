@@ -292,6 +292,21 @@ export interface CustomerCoupon {
   assignedCustomerId?: string; // 若指定客户发放
 }
 
+export interface CouponIssueRecord {
+  id: string;
+  couponId: string;
+  couponName: string;
+  couponCode?: string;
+  couponType: CustomerCoupon['type'];
+  couponValue: number;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  issuedAt: string;
+  operator: string;
+  source: 'coupon-center' | 'customer-detail';
+}
+
 // ---------------------------------------------------------------------------
 // Balance Audit Request (余额变更与财务审核)
 // ---------------------------------------------------------------------------

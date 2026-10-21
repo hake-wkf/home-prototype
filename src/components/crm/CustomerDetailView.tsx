@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronLeft,
   Edit,
@@ -25,8 +25,18 @@ import {
   SlidersHorizontal,
   Paperclip,
   Gift,
+  Search,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from 'lucide-react';
-import { Customer, FollowUpRecord, SavedPlanRecord, CustomerCoupon, BalanceAuditRequest } from '../../types';
+import {
+  Customer,
+  FollowUpRecord,
+  SavedPlanRecord,
+  CustomerCoupon,
+  BalanceAuditRequest,
+  BalanceTransactionRecord,
+} from '../../types';
 import { CustomerInfoModal } from './CustomerInfoModal';
 import { NewFollowUpModal } from './NewFollowUpModal';
 import { AssignModal } from './AssignModal';
@@ -60,12 +70,43 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
   const [selectedGrantCouponId, setSelectedGrantCouponId] = useState('');
   const [isSubmittedPlansModalOpen, setIsSubmittedPlansModalOpen] = useState(false);
   const [selectedSubmittedPlanId, setSelectedSubmittedPlanId] = useState<string | null>(null);
+  const [balanceKeyword, setBalanceKeyword] = useState('');
+  const [balanceTypeFilter, setBalanceTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [followUpKeyword, setFollowUpKeyword] = useState('');
+  const [balanceTransactions, setBalanceTransactions] = useState<BalanceTransactionRecord[]>(
+    () => AdminStorageManager.getBalanceTransactions(),
+  );
   const [allSavedPlans, setAllSavedPlans] = useState<SavedPlanRecord[]>(() =>
     AdminStorageManager.getSavedPlans()
   );
 
+  useEffect(() => {
+    const refreshTransactions = () => {
+      setBalanceTransactions(AdminStorageManager.getBalanceTransactions());
+    };
+    window.addEventListener('balance_transactions_updated', refreshTransactions);
+    window.addEventListener('customer_balance_updated', refreshTransactions);
+    return () => {
+      window.removeEventListener('balance_transactions_updated', refreshTransactions);
+      window.removeEventListener('customer_balance_updated', refreshTransactions);
+    };
+  }, []);
+
   // Filter records for this customer
   const customerFollowUps = followUps.filter((f) => f.customerId === customer.id);
+  const filteredCustomerFollowUps = customerFollowUps.filter((record) => {
+    if (!followUpKeyword.trim()) return true;
+    const query = followUpKeyword.toLowerCase().trim();
+    return [
+      record.method,
+      record.matter,
+      record.result,
+      record.operator,
+      record.time,
+      record.contactPerson || '',
+      record.contactPhone || '',
+    ].some((value) => value.toLowerCase().includes(query));
+  });
 
   // Customer's reported plans
   const customerPlans = allSavedPlans.filter(
@@ -80,6 +121,45 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
   const customerAuditRequests = allAuditRequests.filter(
     (r) => r.customerId === customer.id || r.customerPhone === customer.phone
   );
+  const storedCustomerTransactions = balanceTransactions.filter(
+    (transaction) =>
+      transaction.customerId === customer.id ||
+      transaction.customerPhone === customer.phone,
+  );
+  const auditDerivedTransactions: BalanceTransactionRecord[] = customerAuditRequests
+    .filter((request) => request.status === 'approved')
+    .map((request) => ({
+      id: `audit_transaction_${request.id}`,
+      customerId: request.customerId,
+      customerPhone: request.customerPhone,
+      title:
+        request.accountType === 'deposit'
+          ? '合作保证金回款入账'
+          : '进货款回款入账',
+      note: request.financeNote || request.remark,
+      amount: Math.abs(request.changeAmount),
+      type: request.changeAmount >= 0 ? 'income' : 'expense',
+      accountType: request.accountType === 'deposit' ? 'deposit' : 'purchase',
+      time: request.financeReviewedAt || request.submittedAt,
+    }));
+  const transactionMap = new Map<string, BalanceTransactionRecord>();
+  [...auditDerivedTransactions, ...storedCustomerTransactions].forEach((transaction) => {
+    const key = `${transaction.type}_${transaction.amount}_${transaction.time.slice(0, 10)}`;
+    if (!transactionMap.has(key)) transactionMap.set(key, transaction);
+  });
+  const customerBalanceTransactions = Array.from(transactionMap.values());
+  const filteredBalanceTransactions = customerBalanceTransactions.filter((transaction) => {
+    if (balanceTypeFilter !== 'all' && transaction.type !== balanceTypeFilter) return false;
+    if (!balanceKeyword.trim()) return true;
+    const query = balanceKeyword.toLowerCase().trim();
+    return [
+      transaction.title,
+      transaction.note,
+      transaction.time,
+      transaction.accountType === 'deposit' ? '合作保证金' : '进货款',
+    ].some((value) => value.toLowerCase().includes(query));
+  });
+  const latestAuditRecord = customerAuditRequests[0];
 
   // System coupons for grant
   const availableSystemCoupons = AdminStorageManager.getCoupons();
@@ -115,7 +195,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
     const couponToGrant = availableSystemCoupons.find((c) => c.id === selectedGrantCouponId);
     if (!couponToGrant) return;
 
-    AdminStorageManager.issueCouponToCustomer(couponToGrant, customer.id);
+    AdminStorageManager.issueCouponToCustomer(couponToGrant, customer.id, 'customer-detail');
     const updatedCustomer = AdminStorageManager.getCustomers().find((c) => c.id === customer.id);
     if (updatedCustomer) {
       onUpdateCustomer(updatedCustomer);
@@ -594,6 +674,123 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
               财务设置资金账户
             </button>
 
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-900">收入与支出流水</h4>
+                  <p className="mt-0.5 text-[10px] text-slate-400">包含回款入账、方案下单消费等资金记录</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={balanceKeyword}
+                      onChange={(event) => setBalanceKeyword(event.target.value)}
+                      placeholder="搜索说明、时间、账户..."
+                      className="w-52 rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-2 text-[10px] outline-none focus:border-blue-400 focus:bg-white"
+                    />
+                  </div>
+                  <div className="flex rounded-lg bg-slate-100 p-1 text-[10px] font-bold">
+                    {[
+                      { key: 'all' as const, label: '全部' },
+                      { key: 'income' as const, label: '收入' },
+                      { key: 'expense' as const, label: '支出' },
+                    ].map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => setBalanceTypeFilter(item.key)}
+                        className={`rounded-md px-2 py-1 cursor-pointer ${
+                          balanceTypeFilter === item.key
+                            ? 'bg-white text-slate-900 shadow-2xs'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {filteredBalanceTransactions.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-6 text-center text-[11px] text-slate-400">
+                    暂无符合条件的收支记录
+                  </div>
+                ) : (
+                  filteredBalanceTransactions.map((transaction) => {
+                    const isIncome = transaction.type === 'income';
+                    const Icon = isIncome ? ArrowDownLeft : ArrowUpRight;
+                    return (
+                      <div
+                        key={transaction.id}
+                        className={`rounded-xl border p-3 ${
+                          isIncome
+                            ? 'border-emerald-100 bg-emerald-50/40'
+                            : 'border-rose-100 bg-rose-50/30'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-start gap-2.5">
+                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                              isIncome ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                            }`}>
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-bold text-slate-800">
+                                {transaction.title}
+                              </p>
+                              <p className="mt-0.5 text-[10px] text-slate-500">{transaction.note}</p>
+                              <p className="mt-1 font-mono text-[9px] text-slate-400">
+                                {transaction.time} · {transaction.accountType === 'deposit' ? '合作保证金' : '进货款'}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`shrink-0 font-mono text-sm font-black ${
+                            isIncome ? 'text-emerald-600' : 'text-rose-600'
+                          }`}>
+                            {isIncome ? '+' : '-'}¥{transaction.amount.toLocaleString()}
+                          </span>
+                        </div>
+
+                        {!isIncome && (
+                          <div className="mt-2 rounded-lg border border-rose-100 bg-white px-2.5 py-2">
+                            <p className="text-[9px] font-bold text-slate-600">最后一次审核记录</p>
+                            {latestAuditRecord ? (
+                              <div className="mt-1 flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-[10px] text-slate-700">
+                                    {latestAuditRecord.financeReviewedAt || latestAuditRecord.submittedAt} ·{' '}
+                                    {latestAuditRecord.financeNote || latestAuditRecord.remark}
+                                  </p>
+                                  <a
+                                    href={latestAuditRecord.paymentProofUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-1 inline-block text-[9px] font-bold text-blue-600 hover:underline"
+                                  >
+                                    查看审核凭证图片
+                                  </a>
+                                </div>
+                                <img
+                                  src={latestAuditRecord.paymentProofUrl}
+                                  alt="最后一次审核凭证"
+                                  className="h-10 w-10 rounded-lg border border-slate-200 object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <p className="mt-1 text-[10px] text-slate-400">系统自动扣款，暂无财务审核凭证</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
             {/* Audit History */}
             <div className="space-y-2.5">
               <span className="text-xs font-extrabold text-slate-800 block">
@@ -711,12 +908,21 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
 
         {/* Tab Content 4: 跟进记录 */}
         {activeTab === 'followUp' && (
-          <div className="p-5">
-            {customerFollowUps.length === 0 ? (
+          <div className="space-y-3 p-5">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={followUpKeyword}
+                onChange={(event) => setFollowUpKeyword(event.target.value)}
+                placeholder="搜索跟进内容、操作人、时间、联系人..."
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none focus:border-blue-400 focus:bg-white"
+              />
+            </div>
+            {filteredCustomerFollowUps.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs">暂无跟进与日志记录</div>
             ) : (
               <div className="space-y-3">
-                {customerFollowUps.map((record) => (
+                {filteredCustomerFollowUps.map((record) => (
                   <div
                     key={record.id}
                     className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs"

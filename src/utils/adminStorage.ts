@@ -15,6 +15,7 @@ import {
   FloorPlanDesignProject,
   PlanChatMessage,
   CustomerCoupon,
+  CouponIssueRecord,
   BalanceAuditRequest,
   BalanceTransactionRecord,
   UserDefaultContact,
@@ -38,6 +39,7 @@ const STORAGE_KEYS = {
   CUSTOM_QUOTATIONS: 'zhijia_admin_custom_quotations_v1',
   FLOOR_POINT_DESIGNS: 'zhijia_admin_floor_point_designs_v1',
   COUPONS: 'zhijia_admin_coupons_v1',
+  COUPON_ISSUE_RECORDS: 'zhijia_admin_coupon_issue_records_v1',
   BALANCE_AUDIT_REQUESTS: 'zhijia_admin_balance_audit_requests_v1',
   BALANCE_TRANSACTIONS: 'zhijia_admin_balance_transactions_v1',
   DEFAULT_CONTACTS: 'zhijia_app_default_contacts_v1',
@@ -1531,7 +1533,40 @@ export class AdminStorageManager {
     this.saveCoupons(updated);
   }
 
-  static issueCouponToCustomer(coupon: CustomerCoupon, customerId: string): void {
+  static updateCoupon(coupon: CustomerCoupon): void {
+    this.saveCoupons(
+      this.getCoupons().map((item) => (item.id === coupon.id ? coupon : item)),
+    );
+  }
+
+  static deleteCoupon(couponId: string): void {
+    this.saveCoupons(this.getCoupons().filter((item) => item.id !== couponId));
+  }
+
+  static getCouponIssueRecords(): CouponIssueRecord[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.COUPON_ISSUE_RECORDS);
+      if (data) return JSON.parse(data) as CouponIssueRecord[];
+    } catch (error) {
+      console.error('Failed to parse coupon issue records', error);
+    }
+    return [];
+  }
+
+  static saveCouponIssueRecords(records: CouponIssueRecord[]): void {
+    localStorage.setItem(STORAGE_KEYS.COUPON_ISSUE_RECORDS, JSON.stringify(records));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('coupon_issue_records_updated', { detail: records }),
+      );
+    }
+  }
+
+  static issueCouponToCustomer(
+    coupon: CustomerCoupon,
+    customerId: string,
+    source: CouponIssueRecord['source'] = 'coupon-center',
+  ): void {
     const customers = this.getCustomers();
     const targetCust = customers.find((c) => c.id === customerId);
     if (!targetCust) return;
@@ -1568,6 +1603,24 @@ export class AdminStorageManager {
     } catch {
       // ignore
     }
+
+    this.saveCouponIssueRecords([
+      {
+        id: `coupon_issue_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        couponId: coupon.id,
+        couponName: coupon.name,
+        couponCode: coupon.code,
+        couponType: coupon.type,
+        couponValue: coupon.value,
+        customerId: targetCust.id,
+        customerName: targetCust.name,
+        customerPhone: targetCust.phone,
+        issuedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+        operator: '卫科帆 (平台运营)',
+        source,
+      },
+      ...this.getCouponIssueRecords(),
+    ]);
   }
 
   // ---------------------------------------------------------------------------
