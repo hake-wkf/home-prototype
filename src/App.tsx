@@ -278,6 +278,11 @@ export default function App() {
       productName: string;
       quantity: number;
       unitPrice: number;
+      promotionId?: string;
+      promotionName?: string;
+      customerName?: string;
+      customerPhone?: string;
+      awardedAt?: string;
     }>;
   }): SavedPlanRecord => {
     const nowTime = `${new Date().toISOString().slice(0, 10)} ${new Date().toTimeString().slice(0, 5)}`;
@@ -332,6 +337,11 @@ export default function App() {
       productName: string;
       quantity: number;
       unitPrice: number;
+      promotionId?: string;
+      promotionName?: string;
+      customerName?: string;
+      customerPhone?: string;
+      awardedAt?: string;
     }>;
   }) => {
     const plan = buildCurrentPlanRecord(summary);

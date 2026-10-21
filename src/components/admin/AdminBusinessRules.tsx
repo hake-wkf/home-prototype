@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BadgePercent,
   CalendarClock,
@@ -11,8 +11,11 @@ import {
   Truck,
   Users,
   X,
+  Pencil,
+  History,
 } from 'lucide-react';
 import { BusinessRuleSettings, Customer, PromotionActivity } from '../../types';
+import { AdminStorageManager } from '../../utils/adminStorage';
 
 interface AdminBusinessRulesProps {
   customers: Customer[];
@@ -21,6 +24,18 @@ interface AdminBusinessRulesProps {
 
 const PROMOTION_KEY = 'zhijia_admin_promotions_v1';
 const RULE_KEY = 'zhijia_admin_business_rules_v1';
+
+interface GiftGrantRecord {
+  id: string;
+  promotionId?: string;
+  promotionName: string;
+  productName: string;
+  quantity: number;
+  customerName: string;
+  customerPhone: string;
+  awardedAt: string;
+  planTitle: string;
+}
 
 const DEFAULT_PROMOTIONS: PromotionActivity[] = [
   {
@@ -87,11 +102,29 @@ const readStorage = <T,>(key: string, fallback: T): T => {
   }
 };
 
+const createEmptyPromotion = (): PromotionActivity => ({
+  id: '',
+  name: '',
+  enabled: true,
+  audience: 'all',
+  customerIds: [],
+  conditionType: 'quantity',
+  conditionCategory: '智能面板/开关',
+  conditionValue: 10,
+  rewardProductId: 'gift_switch_1',
+  rewardProductName: '翎扬智能开关（赠品）',
+  rewardQuantity: 1,
+  startDate: new Date().toISOString().slice(0, 10),
+  endDate: '2026-12-31',
+});
+
 export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
   customers,
   onShowToast,
 }) => {
-  const [activeTab, setActiveTab] = useState<'promotion' | 'shipping' | 'renewal'>('promotion');
+  const [activeTab, setActiveTab] = useState<
+    'promotion' | 'records' | 'shipping' | 'renewal'
+  >('promotion');
   const [promotions, setPromotions] = useState<PromotionActivity[]>(() => {
     const stored = readStorage(PROMOTION_KEY, DEFAULT_PROMOTIONS);
     if (stored.length === 1 && stored[0].id === 'promo_switch_10') {
@@ -103,21 +136,39 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
     readStorage(RULE_KEY, DEFAULT_RULES),
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newPromotion, setNewPromotion] = useState<PromotionActivity>({
-    id: '',
-    name: '',
-    enabled: true,
-    audience: 'all',
-    customerIds: [],
-    conditionType: 'quantity',
-    conditionCategory: '智能面板/开关',
-    conditionValue: 10,
-    rewardProductId: 'gift_switch_1',
-    rewardProductName: '翎扬智能开关（赠品）',
-    rewardQuantity: 1,
-    startDate: '2026-10-20',
-    endDate: '2026-12-31',
-  });
+  const [editingPromotionId, setEditingPromotionId] = useState<string | null>(null);
+  const [newPromotion, setNewPromotion] = useState<PromotionActivity>(
+    createEmptyPromotion,
+  );
+  const [giftRecords, setGiftRecords] = useState<GiftGrantRecord[]>([]);
+
+  useEffect(() => {
+    const loadRecords = () => {
+      setGiftRecords(
+        AdminStorageManager.getSavedPlans().flatMap((plan) =>
+          (plan.promotionGifts || []).map((gift, index) => ({
+            id: `${plan.id}_${gift.productId}_${index}`,
+            promotionId: gift.promotionId,
+            promotionName: gift.promotionName || '营销活动赠品',
+            productName: gift.productName,
+            quantity: gift.quantity,
+            customerName: gift.customerName || plan.customerName || '未登记',
+            customerPhone:
+              gift.customerPhone || plan.customerPhone || '未登记手机号',
+            awardedAt: gift.awardedAt || plan.updatedAt || plan.createdAt,
+            planTitle: plan.title,
+          })),
+        ),
+      );
+    };
+    loadRecords();
+    window.addEventListener('saved_plans_updated', loadRecords);
+    window.addEventListener('storage', loadRecords);
+    return () => {
+      window.removeEventListener('saved_plans_updated', loadRecords);
+      window.removeEventListener('storage', loadRecords);
+    };
+  }, []);
 
   const persistPromotions = (items: PromotionActivity[]) => {
     setPromotions(items);
@@ -129,33 +180,36 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
     onShowToast('业务规则已保存');
   };
 
+  const openCreatePromotion = () => {
+    setEditingPromotionId(null);
+    setNewPromotion(createEmptyPromotion());
+    setIsCreateOpen(true);
+  };
+
+  const openEditPromotion = (promotion: PromotionActivity) => {
+    setEditingPromotionId(promotion.id);
+    setNewPromotion({ ...promotion, customerIds: [...promotion.customerIds] });
+    setIsCreateOpen(true);
+  };
+
   const handleCreatePromotion = (event: React.FormEvent) => {
     event.preventDefault();
     const promotion: PromotionActivity = {
       ...newPromotion,
-      id: `promo_${Date.now()}`,
+      id: editingPromotionId || `promo_${Date.now()}`,
       name: newPromotion.name.trim(),
       customerIds: newPromotion.audience === 'all' ? [] : newPromotion.customerIds,
     };
     if (!promotion.name) return;
-    persistPromotions([promotion, ...promotions]);
+    persistPromotions(
+      editingPromotionId
+        ? promotions.map((item) => (item.id === editingPromotionId ? promotion : item))
+        : [promotion, ...promotions],
+    );
     setIsCreateOpen(false);
-    setNewPromotion({
-      id: '',
-      name: '',
-      enabled: true,
-      audience: 'all',
-      customerIds: [],
-      conditionType: 'quantity',
-      conditionCategory: '智能面板/开关',
-      conditionValue: 10,
-      rewardProductId: 'gift_switch_1',
-      rewardProductName: '翎扬智能开关（赠品）',
-      rewardQuantity: 1,
-      startDate: '2026-10-20',
-      endDate: '2026-12-31',
-    });
-    onShowToast('营销活动已创建');
+    setEditingPromotionId(null);
+    setNewPromotion(createEmptyPromotion());
+    onShowToast(editingPromotionId ? '营销活动已更新' : '营销活动已创建');
   };
 
   return (
@@ -178,9 +232,10 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
+      <div className="grid grid-cols-4 rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
         {[
           { key: 'promotion' as const, label: '营销活动', icon: Gift },
+          { key: 'records' as const, label: '赠送记录', icon: History },
           { key: 'shipping' as const, label: '运费规则', icon: Truck },
           { key: 'renewal' as const, label: '续约提醒', icon: CalendarClock },
         ].map((tab) => {
@@ -210,7 +265,7 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
               <p className="mt-1 text-[11px] text-slate-500">满足条件后奖品会自动进入方案奖品栏，无需客户手动领取。</p>
             </div>
             <button
-              onClick={() => setIsCreateOpen(true)}
+              onClick={openCreatePromotion}
               className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -233,22 +288,31 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() =>
-                      persistPromotions(
-                        promotions.map((item) =>
-                          item.id === promotion.id ? { ...item, enabled: !item.enabled } : item,
-                        ),
-                      )
-                    }
-                    className={`relative h-5 w-9 rounded-full cursor-pointer ${
-                      promotion.enabled ? 'bg-emerald-500' : 'bg-slate-200'
-                    }`}
-                  >
-                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm ${
-                      promotion.enabled ? 'translate-x-4' : 'translate-x-0.5'
-                    }`} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditPromotion(promotion)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      编辑
+                    </button>
+                    <button
+                      onClick={() =>
+                        persistPromotions(
+                          promotions.map((item) =>
+                            item.id === promotion.id ? { ...item, enabled: !item.enabled } : item,
+                          ),
+                        )
+                      }
+                      className={`relative h-5 w-9 rounded-full cursor-pointer ${
+                        promotion.enabled ? 'bg-emerald-500' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm ${
+                        promotion.enabled ? 'translate-x-4' : 'translate-x-0.5'
+                      }`} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
@@ -271,10 +335,99 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
                     <span className="font-bold text-slate-800">赠送奖励：</span>
                     {promotion.rewardProductName} × {promotion.rewardQuantity}，赠品金额 ¥0
                   </p>
+                  <p className="border-t border-slate-200 pt-2 text-emerald-700">
+                    <span className="font-bold">已送出：</span>
+                    {giftRecords
+                      .filter((record) => record.promotionId === promotion.id)
+                      .reduce((sum, record) => sum + record.quantity, 0)}{' '}
+                    件
+                  </p>
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'records' && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
+            <div>
+              <h3 className="flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                <History className="h-4 w-4 text-emerald-600" />
+                营销赠品发放记录
+              </h3>
+              <p className="mt-1 text-[10px] text-slate-400">
+                客户方案满足活动条件后自动生成发放记录
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[10px]">
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-600">
+                {giftRecords.length} 笔
+              </span>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700">
+                共送出 {giftRecords.reduce((sum, record) => sum + record.quantity, 0)} 件
+              </span>
+            </div>
+          </div>
+
+          {giftRecords.length === 0 ? (
+            <div className="py-14 text-center">
+              <Gift className="mx-auto h-9 w-9 text-slate-300" />
+              <p className="mt-2 text-xs font-bold text-slate-600">暂无赠品发放记录</p>
+              <p className="mt-1 text-[10px] text-slate-400">客户满足活动条件并保存方案后会显示在这里</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">发放时间</th>
+                    <th className="px-4 py-3 font-bold">营销活动</th>
+                    <th className="px-4 py-3 font-bold">赠品</th>
+                    <th className="px-4 py-3 text-center font-bold">数量</th>
+                    <th className="px-4 py-3 font-bold">领取客户</th>
+                    <th className="px-4 py-3 font-bold">关联方案</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {giftRecords.map((record) => (
+                    <tr key={record.id} className="hover:bg-emerald-50/30">
+                      <td className="px-4 py-3 font-mono text-[10px] text-slate-500">
+                        {record.awardedAt}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-slate-800">
+                        {record.promotionName}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                            <Gift className="h-3.5 w-3.5" />
+                          </span>
+                          <div>
+                            <p className="font-bold text-slate-800">{record.productName}</p>
+                            <p className="text-[9px] text-emerald-600">赠品金额 ¥0</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center font-mono font-bold text-slate-700">
+                        ×{record.quantity}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-slate-800">{record.customerName}</p>
+                        <p className="mt-0.5 font-mono text-[9px] text-slate-400">
+                          {record.customerPhone}
+                        </p>
+                      </td>
+                      <td className="max-w-[220px] truncate px-4 py-3 text-slate-600" title={record.planTitle}>
+                        {record.planTitle}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -368,7 +521,9 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
             <div className="flex items-center justify-between bg-slate-900 px-5 py-4 text-white">
               <div className="flex items-center gap-2">
                 <Gift className="h-4 w-4 text-amber-400" />
-                <h3 className="text-sm font-bold">新建营销活动</h3>
+                <h3 className="text-sm font-bold">
+                  {editingPromotionId ? '编辑营销活动' : '新建营销活动'}
+                </h3>
               </div>
               <button onClick={() => setIsCreateOpen(false)} className="cursor-pointer text-slate-400 hover:text-white">
                 <X className="h-4 w-4" />
@@ -541,7 +696,8 @@ export const AdminBusinessRules: React.FC<AdminBusinessRulesProps> = ({
                   type="submit"
                   className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-5 py-2 font-bold text-white hover:bg-blue-700"
                 >
-                  <Check className="h-3.5 w-3.5" /> 创建活动
+                  <Check className="h-3.5 w-3.5" />
+                  {editingPromotionId ? '保存修改' : '创建活动'}
                 </button>
               </div>
             </form>

@@ -396,6 +396,11 @@ export interface SavedPlanRecord {
     productName: string;
     quantity: number;
     unitPrice: number;
+    promotionId?: string;
+    promotionName?: string;
+    customerName?: string;
+    customerPhone?: string;
+    awardedAt?: string;
   }>;
 }
 

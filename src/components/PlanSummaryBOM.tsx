@@ -54,6 +54,11 @@ interface PlanSummaryBOMProps {
       productName: string;
       quantity: number;
       unitPrice: number;
+      promotionId?: string;
+      promotionName?: string;
+      customerName?: string;
+      customerPhone?: string;
+      awardedAt?: string;
     }>;
   }) => void;
   pageMode?: 'main' | 'editList';
@@ -1809,6 +1814,11 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                         productName: item.rewardProductName,
                         quantity: item.rewardQuantity,
                         unitPrice: 0,
+                        promotionId: item.id,
+                        promotionName: item.name,
+                        customerName: currentProfile.name,
+                        customerPhone: currentProfile.phone,
+                        awardedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
                       })),
                   })
                 }
