@@ -277,7 +277,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     (contactSalesPlan?.totalCostYuan || contactSalesPlan?.totalCostTenThousand || 0) *
     (contactSalesPlan?.totalCostYuan ? 1 : 10000);
   const dealerPriceYuan =
-    contactSalesPlan?.dealerPriceYuan ?? Math.round(schemePriceYuan * 0.8);
+    contactSalesPlan?.dealerPriceYuan ?? schemePriceYuan;
   const priceDifferenceYuan =
     contactSalesPlan?.priceDifferenceYuan ?? schemePriceYuan - dealerPriceYuan;
   const orderSubtotalYuan = dealerPriceYuan;
@@ -442,11 +442,9 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     }
     const originalAmountYuan =
       contactSalesPlan.dealerPriceYuan ||
-      Math.round(
-        (contactSalesPlan.schemePriceYuan ||
-          contactSalesPlan.totalCostYuan ||
-          contactSalesPlan.totalCostTenThousand * 10000) * 0.8,
-      );
+      contactSalesPlan.schemePriceYuan ||
+      contactSalesPlan.totalCostYuan ||
+      contactSalesPlan.totalCostTenThousand * 10000;
     const eligibleCouponAmount =
       contactSalesPlan.couponEligibleAmount ?? originalAmountYuan;
     const couponDiscountAmount = selectedCoupon

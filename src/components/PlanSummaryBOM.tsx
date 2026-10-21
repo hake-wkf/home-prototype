@@ -589,7 +589,7 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   const discountedTotal = Math.round((baseTotalCost * customDiscount) / 100);
   const finalTotalCost = discountedTotal;
   const schemePriceYuan = finalTotalCost;
-  const dealerPriceYuan = Math.round(baseTotalCost * 0.8);
+  const dealerPriceYuan = baseTotalCost;
   const priceDifferenceYuan = schemePriceYuan - dealerPriceYuan;
   const totalDeviceCount = deviceItems.reduce((sum, item) => sum + item.qty, 0);
   const visibleDeviceItems = isProductListExpanded ? deviceItems : deviceItems.slice(0, 5);
