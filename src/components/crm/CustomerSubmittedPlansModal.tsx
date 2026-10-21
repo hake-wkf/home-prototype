@@ -36,6 +36,7 @@ interface PlanEquipmentRow {
   qty: number;
   unitPrice: number;
   subtotal: number;
+  isGift?: boolean;
 }
 
 const currency = (value: number) =>
@@ -116,6 +117,21 @@ const buildEquipmentRows = (plan: SavedPlanRecord): PlanEquipmentRow[] => {
       addDevice(room, device);
     });
   }
+
+  (plan.promotionGifts || []).forEach((gift) => {
+    rows.set(`gift_${gift.productId}_${gift.productName}`, {
+      id: `${plan.id}_gift_${gift.productId}`,
+      roomName: '活动赠品',
+      brand: '活动赠品',
+      category: '营销活动赠品',
+      model: gift.productName,
+      unit: '件',
+      qty: gift.quantity,
+      unitPrice: 0,
+      subtotal: 0,
+      isGift: true,
+    });
+  });
 
   return Array.from(rows.values());
 };
@@ -427,10 +443,20 @@ export const CustomerSubmittedPlansModal: React.FC<CustomerSubmittedPlansModalPr
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
                               {equipmentDisplayRows.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50">
+                                <tr
+                                  key={item.id}
+                                  className={item.isGift ? 'bg-emerald-50/50' : 'hover:bg-slate-50'}
+                                >
                                   <td className="px-3 py-3 font-semibold text-slate-700">{item.roomName}</td>
                                   <td className="px-3 py-3">
-                                    <p className="font-semibold text-slate-800">{item.brand}</p>
+                                    <div className="flex items-center gap-1">
+                                      <p className="font-semibold text-slate-800">{item.brand}</p>
+                                      {item.isGift && (
+                                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
+                                          赠品
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="mt-0.5 text-[10px] text-slate-400">{item.category}</p>
                                   </td>
                                   <td className="px-3 py-3 leading-relaxed text-slate-700">{item.model}</td>

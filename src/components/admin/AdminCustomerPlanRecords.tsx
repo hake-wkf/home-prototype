@@ -16,6 +16,7 @@ import {
   XCircle,
   Bot,
   FileText,
+  Gift,
 } from 'lucide-react';
 import { SavedPlanRecord, PlanChatMessage, Customer } from '../../types';
 
@@ -724,6 +725,31 @@ export const AdminCustomerPlanRecords: React.FC<AdminCustomerPlanRecordsProps> =
                   ))}
                 </div>
               </div>
+              {(activeBomPlan.promotionGifts || []).length > 0 && (
+                <div>
+                  <h4 className="mb-2 flex items-center gap-1.5 font-bold text-slate-900">
+                    <Gift className="h-4 w-4 text-emerald-600" />
+                    营销活动赠品
+                  </h4>
+                  <div className="space-y-2">
+                    {activeBomPlan.promotionGifts!.map((gift, index) => (
+                      <div
+                        key={`${gift.productId}_${index}`}
+                        className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5"
+                      >
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{gift.productName}</p>
+                          <p className="mt-0.5 text-[10px] text-emerald-600">活动赠品 · 不计费</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono text-xs font-bold text-slate-800">×{gift.quantity}</p>
+                          <p className="font-mono text-[10px] font-bold text-emerald-700">¥0</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">

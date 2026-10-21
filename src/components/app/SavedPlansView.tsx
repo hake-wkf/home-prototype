@@ -23,6 +23,7 @@ import {
   Building2,
   Phone,
   FileEdit,
+  Gift,
 } from 'lucide-react';
 import {
   SavedPlanRecord,
@@ -1286,7 +1287,42 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                     </div>
                     <span className="font-bold text-slate-900 font-mono">x3</span>
                   </div>
+
                 </div>
+
+                {(contactSalesPlan.promotionGifts || []).length > 0 && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5">
+                    <div className="mb-2 flex items-center gap-1.5">
+                      <Gift className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-[10px] font-extrabold text-emerald-800">
+                        赠品已加入产品清单
+                      </span>
+                      <span className="rounded-full bg-emerald-600 px-1.5 py-0.5 text-[8px] font-bold text-white">
+                        ¥0
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {(contactSalesPlan.promotionGifts || []).map((gift, index) => (
+                        <div
+                          key={`${gift.productId}_${index}`}
+                          className="flex items-center justify-between rounded-lg border border-emerald-100 bg-white px-2.5 py-2"
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
+                              活动赠品
+                            </span>
+                            <span className="truncate text-[11px] font-bold text-slate-900">
+                              {gift.productName}
+                            </span>
+                          </div>
+                          <span className="shrink-0 font-mono text-xs font-extrabold text-emerald-700">
+                            ×{gift.quantity}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-2 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5">
