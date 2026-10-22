@@ -157,7 +157,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [contactNameInput, setContactNameInput] = useState('');
   const [contactPhoneInput, setContactPhoneInput] = useState('');
   const [contactAddressInput, setContactAddressInput] = useState('');
-  const [contactTagInput, setContactTagInput] = useState('新房');
   const [contactIsDefaultInput, setContactIsDefaultInput] = useState(false);
 
   // User's Balance Amount
@@ -244,7 +243,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
     setContactNameInput('');
     setContactPhoneInput('');
     setContactAddressInput('');
-    setContactTagInput('新房');
     setContactIsDefaultInput(contacts.length === 0);
     setIsContactModalOpen(true);
   };
@@ -254,7 +252,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
     setContactNameInput(contact.name);
     setContactPhoneInput(contact.phone);
     setContactAddressInput(contact.address);
-    setContactTagInput(contact.tag || '新房');
     setContactIsDefaultInput(!!contact.isDefault);
     setIsContactModalOpen(true);
   };
@@ -270,7 +267,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       name: contactNameInput.trim(),
       phone: contactPhoneInput.trim(),
       address: contactAddressInput.trim(),
-      tag: contactTagInput,
       isDefault: contactIsDefaultInput,
       createdAt: editingContact?.createdAt || new Date().toISOString().slice(0, 10),
     };
@@ -685,9 +681,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                     >
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-extrabold text-slate-900">{contact.name}</span>
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">
-                          {contact.tag || '地址'}
-                        </span>
                         {contact.isDefault && (
                           <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
                             当前默认
@@ -985,31 +978,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                   className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-900 focus:bg-white"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold text-slate-700">地址标签</label>
-                  <select
-                    value={contactTagInput}
-                    onChange={(event) => setContactTagInput(event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none"
-                  >
-                    <option value="新房">新房</option>
-                    <option value="家">家</option>
-                    <option value="公司">公司</option>
-                    <option value="工地">工地</option>
-                    <option value="其他">其他</option>
-                  </select>
-                </div>
-                <label className="flex items-end space-x-2 pb-2 text-[11px] font-semibold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={contactIsDefaultInput}
-                    onChange={(event) => setContactIsDefaultInput(event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-slate-900"
-                  />
-                  <span>设为默认联系人</span>
-                </label>
-              </div>
+              <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={contactIsDefaultInput}
+                  onChange={(event) => setContactIsDefaultInput(event.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900"
+                />
+                <span>设为默认联系人</span>
+              </label>
             </div>
 
             <div className="flex space-x-2 border-t border-slate-200 bg-slate-50 p-3">

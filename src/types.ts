@@ -216,7 +216,6 @@ export interface UserDefaultContact {
   phone: string; // 手机号码
   address: string; // 收获详细地址
   isDefault?: boolean; // 是否默认
-  tag?: string; // 标签，如 '家' | '公司' | '新房'
   createdAt?: string;
 }
 

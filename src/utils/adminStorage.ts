@@ -103,7 +103,6 @@ export const INITIAL_DEFAULT_CONTACTS: UserDefaultContact[] = [
     phone: '17696180841',
     address: '北京市朝阳区万科翡翠公园 6号楼2单元1201室',
     isDefault: true,
-    tag: '新房',
     createdAt: '2026-08-18 10:00',
   },
   {
@@ -112,7 +111,6 @@ export const INITIAL_DEFAULT_CONTACTS: UserDefaultContact[] = [
     phone: '13811223344',
     address: '北京市海淀区中关村南大街1号院 3号楼502室',
     isDefault: false,
-    tag: '父母家',
     createdAt: '2026-08-19 14:00',
   },
   {
@@ -121,7 +119,6 @@ export const INITIAL_DEFAULT_CONTACTS: UserDefaultContact[] = [
     phone: '17696180841',
     address: '北京市朝阳区望京SOHO T3 A座 2206室',
     isDefault: false,
-    tag: '公司',
     createdAt: '2026-08-20 09:30',
   },
 ];
