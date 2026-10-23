@@ -18,6 +18,13 @@ interface NewCustomerModalProps {
 }
 
 const BUSINESS_SCOPES = ['家装', '酒店项目', '办公项目', '地产项目'];
+const FIELD_GROUP_CLASS = 'flex flex-col gap-1.5';
+const FIELD_LABEL_CLASS =
+  'flex h-4 items-center gap-1 text-[11px] font-bold leading-none text-slate-700';
+const FIELD_CONTROL_CLASS =
+  'h-9 w-full rounded-lg border border-slate-300 px-3 text-xs text-slate-900 outline-none focus:border-blue-500';
+const SECTION_TITLE_CLASS =
+  'mb-3 flex h-5 items-center gap-2 text-[11px] font-extrabold text-slate-900';
 
 const getContractMonths = () => {
   try {
@@ -161,23 +168,23 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
 
         <form onSubmit={handleSubmit} className="flex-1 space-y-5 overflow-y-auto p-5 text-xs">
           <section>
-            <div className="mb-3 flex items-center gap-2 text-[11px] font-extrabold text-slate-900">
+            <div className={SECTION_TITLE_CLASS}>
               <Building2 className="h-4 w-4 text-blue-600" />
               基本情况
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">经销商名称 <span className="text-rose-500">*</span></span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>经销商名称 <span className="text-rose-500">*</span></span>
                 <input
                   required
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="请输入公司或经销商名称"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">手机号 <span className="text-rose-500">*</span></span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>手机号 <span className="text-rose-500">*</span></span>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                   <input
@@ -186,69 +193,72 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                     placeholder="请输入手机号"
-                    className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 font-mono outline-none focus:border-blue-500"
+                    className="h-9 w-full rounded-lg border border-slate-300 pl-9 pr-3 font-mono text-xs outline-none focus:border-blue-500"
                   />
                 </div>
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">经营品牌</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>经营品牌</span>
                 <input
                   value={operationBrands}
                   onChange={(event) => setOperationBrands(event.target.value)}
                   placeholder="如：翎扬、锐捷、Aqara"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">公司人员</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>公司人员</span>
                 <input
                   value={companyStaff}
                   onChange={(event) => setCompanyStaff(event.target.value)}
                   placeholder="如：20 人"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">年销量</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>年销量</span>
                 <input
                   value={annualSales}
                   onChange={(event) => setAnnualSales(event.target.value)}
                   placeholder="如：500 万元"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">店面面积</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>店面面积</span>
                 <input
                   value={storeArea}
                   onChange={(event) => setStoreArea(event.target.value)}
                   placeholder="如：300 ㎡"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">年度出货</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>年度出货</span>
                 <input
                   value={annualShipment}
                   onChange={(event) => setAnnualShipment(event.target.value)}
                   placeholder="如：20 万元"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">项目名称</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>项目名称</span>
                 <input
                   value={projectName}
                   onChange={(event) => setProjectName(event.target.value)}
                   placeholder="选填"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
             </div>
           </section>
 
           <section className="border-t border-slate-100 pt-4">
-            <div className="mb-3 text-[11px] font-extrabold text-slate-900">业务范围</div>
+            <div className={SECTION_TITLE_CLASS}>
+              <Check className="h-4 w-4 text-blue-600" />
+              业务范围
+            </div>
             <div className="flex flex-wrap gap-2">
               {BUSINESS_SCOPES.map((scope) => {
                 const selected = businessScopes.includes(scope);
@@ -272,27 +282,27 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
           </section>
 
           <section className="border-t border-slate-100 pt-4">
-            <div className="mb-3 flex items-center gap-2 text-[11px] font-extrabold text-slate-900">
+            <div className={SECTION_TITLE_CLASS}>
               <FileText className="h-4 w-4 text-emerald-600" />
               合同与赠送
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">合同签约时间</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>合同签约时间</span>
                 <input
                   type="date"
                   value={contractStartDate}
                   onChange={(event) => setContractStartDate(event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
-              <label className="space-y-1">
-                <span className="font-bold text-slate-700">合同结束时间</span>
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>合同结束时间</span>
                 <input
                   type="date"
                   value={contractEndDate}
                   onChange={(event) => setContractEndDate(event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  className={FIELD_CONTROL_CLASS}
                 />
               </label>
             </div>
@@ -300,7 +310,7 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="font-bold text-slate-700">合同附件</span>
+                  <span className={FIELD_LABEL_CLASS}>合同附件</span>
                   <label className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer">
                     <Upload className="h-3 w-3" />
                     上传附件
@@ -341,8 +351,8 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                   </div>
                 )}
               </div>
-              <label className="space-y-1">
-                <span className="flex items-center gap-1 font-bold text-slate-700">
+              <label className={FIELD_GROUP_CLASS}>
+                <span className={FIELD_LABEL_CLASS}>
                   <Gift className="h-3.5 w-3.5 text-amber-500" />
                   赠送内容
                 </span>
@@ -351,21 +361,21 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                   value={giftDescription}
                   onChange={(event) => setGiftDescription(event.target.value)}
                   placeholder="填写赠送的代金券、产品、数量等"
-                  className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 leading-relaxed outline-none focus:border-blue-500"
+                  className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-xs leading-relaxed text-slate-900 outline-none focus:border-blue-500"
                 />
               </label>
             </div>
           </section>
 
           <section className="border-t border-slate-100 pt-4">
-            <label className="space-y-1">
-              <span className="font-bold text-slate-700">备注</span>
+            <label className={FIELD_GROUP_CLASS}>
+              <span className={FIELD_LABEL_CLASS}>备注</span>
               <textarea
                 rows={3}
                 value={remark}
                 onChange={(event) => setRemark(event.target.value)}
                 placeholder="填写其他需要记录的信息"
-                className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 leading-relaxed outline-none focus:border-blue-500"
+                className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-xs leading-relaxed text-slate-900 outline-none focus:border-blue-500"
               />
             </label>
           </section>
