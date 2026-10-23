@@ -310,7 +310,7 @@ export const CustomerAuditCenter: React.FC<CustomerAuditCenterProps> = ({
                     <span>客户手输记录 / 需求备忘:</span>
                   </div>
                   <p className="text-xs text-slate-800 leading-relaxed font-medium">
-                    {cust.customNotes || cust.memo || '客户注册时暂未填写附加手输记录'}
+                    {cust.customNotes || '客户注册时暂未填写附加手输记录'}
                   </p>
 
                   {cust.auditFeedback && (

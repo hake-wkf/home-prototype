@@ -47,7 +47,6 @@ interface PlanSummaryBOMProps {
     schemePriceYuan: number;
     dealerPriceYuan: number;
     priceDifferenceYuan: number;
-    shippingFee: number;
     shippingThreshold: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{
@@ -670,7 +669,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
         ? JSON.parse(stored)
         : {
             shippingThreshold: 20000,
-            shippingFee: 300,
             externalProductsIncludeFreeShipping: false,
             defaultContractMonths: 12,
             renewalReminderDays: 30,
@@ -678,7 +676,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
     } catch {
       return {
         shippingThreshold: 20000,
-        shippingFee: 300,
         externalProductsIncludeFreeShipping: false,
         defaultContractMonths: 12,
         renewalReminderDays: 30,
@@ -688,7 +685,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
   const shippingEligibleAmount =
     selfProductAmount +
     (businessRules.externalProductsIncludeFreeShipping ? externalProductAmount : 0);
-  const shippingFee = 0;
   const shippingPolicyLabel = `未满 ¥${businessRules.shippingThreshold.toLocaleString()}，邮费自理；满 ¥${businessRules.shippingThreshold.toLocaleString()}，免邮费`;
 
   // Active rooms for breakdown
@@ -1803,7 +1799,6 @@ export const PlanSummaryBOM: React.FC<PlanSummaryBOMProps> = ({
                     schemePriceYuan,
                     dealerPriceYuan,
                     priceDifferenceYuan,
-                    shippingFee,
                     shippingThreshold: businessRules.shippingThreshold,
                     shippingPolicyLabel,
                     promotionGifts: automaticRewards

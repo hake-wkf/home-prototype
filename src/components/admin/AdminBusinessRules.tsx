@@ -87,7 +87,6 @@ const DEFAULT_PROMOTIONS: PromotionActivity[] = [
 
 const DEFAULT_RULES: BusinessRuleSettings = {
   shippingThreshold: 20000,
-  shippingFee: 300,
   externalProductsIncludeFreeShipping: false,
   defaultContractMonths: 12,
   renewalReminderDays: 30,

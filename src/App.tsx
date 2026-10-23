@@ -271,7 +271,6 @@ export default function App() {
     schemePriceYuan: number;
     dealerPriceYuan: number;
     priceDifferenceYuan: number;
-    shippingFee: number;
     shippingThreshold: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{
@@ -316,7 +315,6 @@ export default function App() {
       schemePriceYuan: summary?.schemePriceYuan,
       dealerPriceYuan: summary?.dealerPriceYuan,
       priceDifferenceYuan: summary?.priceDifferenceYuan,
-      shippingFee: summary?.shippingFee,
       shippingThreshold: summary?.shippingThreshold,
       shippingPolicyLabel: summary?.shippingPolicyLabel,
       promotionGifts: summary?.promotionGifts,
@@ -332,7 +330,6 @@ export default function App() {
     schemePriceYuan: number;
     dealerPriceYuan: number;
     priceDifferenceYuan: number;
-    shippingFee: number;
     shippingThreshold: number;
     shippingPolicyLabel: string;
     promotionGifts: Array<{

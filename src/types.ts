@@ -216,7 +216,6 @@ export interface UserDefaultContact {
   phone: string; // 手机号码
   address: string; // 收获详细地址
   isDefault?: boolean; // 是否默认
-  createdAt?: string;
 }
 
 export interface CustomerAttachment {
@@ -246,28 +245,13 @@ export interface UserProfile {
   auditorName?: string;
   dealerCode?: string;
   dealerName?: string;
-  dealerLevel?: string;
-  authStatus?: 'certified' | 'pending' | 'reviewing';
-  authExpiryDate?: string;
   role?: string;
-  vipLevel?: string;
   consultantName?: string;
   consultantPhone?: string;
   balance?: number; // 用户App端已有余额
   cooperationDeposit?: number; // 合作保证金
   purchaseBalance?: number; // 进货款余额
   accountEnabled?: boolean; // 账号是否启用
-  contractStartDate?: string;
-  contractEndDate?: string;
-  renewalReminderDays?: number;
-  contractAttachments?: CustomerAttachment[];
-  giftDescription?: string;
-  operationBrands?: string;
-  annualSales?: string;
-  storeArea?: string;
-  companyStaff?: string;
-  businessScopes?: string[];
-  annualShipment?: string;
   coupons?: CustomerCoupon[]; // 用户App端已有优惠券
   defaultContacts?: UserDefaultContact[]; // 个人中心多组默认联系人与收货地址
 }
@@ -289,6 +273,8 @@ export interface CustomerCoupon {
   description?: string; // 优惠说明
   createdAt?: string;
   assignedCustomerId?: string; // 若指定客户发放
+  usedAt?: string;
+  usedPlanId?: string;
 }
 
 export interface CouponIssueRecord {
@@ -400,7 +386,6 @@ export interface SavedPlanRecord {
   schemePriceYuan?: number;
   dealerPriceYuan?: number;
   priceDifferenceYuan?: number;
-  shippingFee?: number;
   shippingThreshold?: number;
   shippingPolicyLabel?: string;
   purchaseBalanceDeducted?: number;
@@ -449,10 +434,6 @@ export interface PlanTemplate {
   usageCount?: number;
 }
 
-export type CustomerStatus = '资源客户' | '意向客户' | '签约客户' | '丢单客户';
-export type DeliveryStatus = '未交付' | '施工中' | '已交付';
-export type PriceGrade = '普通级别' | '高端级别' | '尊享级别' | '暂无';
-export type CustomerLevel = '普通客户' | '重要客户' | '优质客户' | '战略客户';
 export type CustomerType = '家装客户' | '工装客户' | '别墅项目' | '大平层' | '展示厅';
 
 export interface FollowUpRecord {
@@ -480,15 +461,10 @@ export interface Customer {
   projectName: string; // 项目名称, e.g. "谷家智能测试"
   phone: string; // 客户电话
   followUpStatus: string; // 跟进状态, e.g. "未跟进", "08-18 16:26", "已出方案", "待签约"
-  status?: CustomerStatus; // 客户状态: 可选
-  deliveryStatus?: DeliveryStatus; // 交付状态: 可选
-  priceGrade?: PriceGrade; // 价格等级: 可选
   salesperson: string; // 业务员 / 销售顾问
   creator: string; // 创建人
   createdAt: string; // 创建时间: "2026-08-18 16:28"
   updatedAt: string; // 更新时间: "2026-08-18 16:28"
-  isPool: boolean; // true = 客户池中, false = 归属到具体业务员我的客户
-  
   // 补充信息
   community?: string; // 客户小区
   customNotes?: string; // 客户手输记录 / 需求备忘
@@ -514,22 +490,11 @@ export interface Customer {
   annualShipment?: string;
   coupons?: CustomerCoupon[]; // 客户已有优惠券列表
   avatar?: string; // 客户头像
-  memo?: string; // 客户便签
   region: string; // 所属地区, e.g. "北京-北京-朝阳"
   detailAddress: string; // 详细地址, e.g. "北京顺义区大槐树镇"
   source: string; // 客户来源, e.g. "上门用户", "朋友推荐", "广告投放", "渠道介绍"
-  level?: CustomerLevel; // 客户级别 (可选)
   category: CustomerType; // 客户类别, e.g. "家装客户"
-  designer?: string; // 家装设计师
-  firstContactDate?: string; // 初次接触时间
-  houseArea?: string; // 房屋面积
-  houseLayout?: string; // 房屋户型
-  channel?: string; // 关联渠道
-  requirement?: string; // 客户需求
   remark?: string; // 备注
-  wechat?: string; // 微信
-  attachments?: string[]; // 附件
-  isShared?: boolean; // 是否共享
 }
 
 export interface PromotionActivity {
@@ -550,7 +515,6 @@ export interface PromotionActivity {
 
 export interface BusinessRuleSettings {
   shippingThreshold: number;
-  shippingFee: number;
   externalProductsIncludeFreeShipping: boolean;
   defaultContractMonths: number;
   renewalReminderDays: number;

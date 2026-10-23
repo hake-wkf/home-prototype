@@ -14,7 +14,6 @@ interface NewCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (customer: Customer) => void;
-  defaultIsPool?: boolean;
 }
 
 const BUSINESS_SCOPES = ['家装', '酒店项目', '办公项目', '地产项目'];
@@ -49,7 +48,6 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  defaultIsPool = false,
 }) => {
   const contractRules = getContractMonths();
   const [name, setName] = useState('');
@@ -121,7 +119,6 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
       creator: '卫科帆',
       createdAt: new Date().toLocaleString('zh-CN', { hour12: false }),
       updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
-      isPool: defaultIsPool,
       accountEnabled: true,
       cooperationDeposit: 0,
       purchaseBalance: 0,
@@ -140,9 +137,7 @@ export const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
       detailAddress: '',
       source: '渠道介绍',
       category: '家装客户',
-      requirement: businessScopes.join('、') || '全屋智能经销合作',
       remark: remark.trim(),
-      wechat: '',
     };
 
     onSave(newCustomer);

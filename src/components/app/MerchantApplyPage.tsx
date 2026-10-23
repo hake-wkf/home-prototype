@@ -101,13 +101,11 @@ export const MerchantApplyPage: React.FC<MerchantApplyPageProps> = ({
         projectName: `${name.trim()}的智能项目`,
         phone: phone.trim(),
         followUpStatus: '待招商经理审核',
-        priceGrade: '高端级别',
         salesperson: '待指派专属招商经理',
         creator: '商户入驻申请',
         createdAt:
           existingIndex >= 0 ? existingCustomers[existingIndex].createdAt : nowTime,
         updatedAt: nowTime,
-        isPool: true,
         region: '北京市 / 朝阳区',
         detailAddress: '待定',
         source: `商户自助入驻申请`,

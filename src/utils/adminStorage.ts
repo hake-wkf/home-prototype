@@ -103,7 +103,6 @@ export const INITIAL_DEFAULT_CONTACTS: UserDefaultContact[] = [
     phone: '17696180841',
     address: '北京市朝阳区万科翡翠公园 6号楼2单元1201室',
     isDefault: true,
-    createdAt: '2026-08-18 10:00',
   },
   {
     id: 'ct_02',
@@ -111,7 +110,6 @@ export const INITIAL_DEFAULT_CONTACTS: UserDefaultContact[] = [
     phone: '13811223344',
     address: '北京市海淀区中关村南大街1号院 3号楼502室',
     isDefault: false,
-    createdAt: '2026-08-19 14:00',
   },
   {
     id: 'ct_03',
@@ -119,7 +117,6 @@ export const INITIAL_DEFAULT_CONTACTS: UserDefaultContact[] = [
     phone: '17696180841',
     address: '北京市朝阳区望京SOHO T3 A座 2206室',
     isDefault: false,
-    createdAt: '2026-08-20 09:30',
   },
 ];
 
@@ -175,17 +172,6 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   cooperationDeposit: 20000,
   purchaseBalance: 26800,
   accountEnabled: true,
-  contractStartDate: '2026-01-01',
-  contractEndDate: '2026-12-31',
-  renewalReminderDays: 30,
-  operationBrands: '翎扬、锐捷、Aqara',
-  annualSales: '500 万元',
-  storeArea: '300 ㎡',
-  companyStaff: '20 人',
-  businessScopes: ['家装', '酒店项目', '办公项目'],
-  annualShipment: '20 万元',
-  giftDescription: '首年赠送品牌展板、开业物料及样品开关一套',
-  contractAttachments: [],
   coupons: INITIAL_COUPONS,
   defaultContacts: INITIAL_DEFAULT_CONTACTS,
 };
@@ -568,28 +554,16 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     projectName: '谷家智能测试',
     phone: '17696180841',
     followUpStatus: '未跟进',
-    status: '资源客户',
-    deliveryStatus: '未交付',
-    priceGrade: '普通级别',
     salesperson: '卫科帆',
     creator: '卫科帆',
     createdAt: '08-18 16:28',
     updatedAt: '08-18 16:28',
-    isPool: true,
     region: '北京-北京-朝阳',
     detailAddress: '北京顺义区大槐树镇',
     source: '上门用户',
-    level: '普通客户',
     category: '家装客户',
     auditStatus: 'approved',
-    designer: '测试',
-    firstContactDate: '2026-08-18',
-    houseArea: '120',
-    houseLayout: '两室两厅',
-    channel: '暂无',
-    requirement: '暂无',
     remark: '暂无',
-    wechat: 'wechat_test',
   },
   {
     id: 'cust_2',
@@ -598,28 +572,16 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     projectName: '谷家智能',
     phone: '17696180841',
     followUpStatus: '08-18 16:26',
-    status: '资源客户',
-    deliveryStatus: '未交付',
-    priceGrade: '普通级别',
     salesperson: '卫科帆',
     creator: '卫科帆',
     createdAt: '08-18 16:23',
     updatedAt: '08-18 16:27',
-    isPool: false,
     region: '北京-北京-朝阳',
     detailAddress: '北京顺义区大槐树镇',
     source: '朋友推荐',
-    level: '普通客户',
     category: '家装客户',
     auditStatus: 'approved',
-    designer: '测试',
-    firstContactDate: '2026-08-18',
-    houseArea: '140',
-    houseLayout: '三室两厅',
-    channel: '暂无',
-    requirement: '全屋智能照明与窗帘控制联动',
     remark: '暂无',
-    wechat: 'wechat_weikefan',
   },
   {
     id: 'cust_pending',
@@ -628,18 +590,13 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     projectName: '首开拾光里高端定制',
     phone: '13901018899',
     followUpStatus: '待招商经理审核',
-    status: '意向客户',
-    deliveryStatus: '未交付',
-    priceGrade: '尊享级别',
     salesperson: '王浩 (专属招商经理)',
     creator: '商户入驻申请',
     createdAt: '08-19 14:00',
     updatedAt: '08-19 14:00',
-    isPool: true,
     region: '北京-朝阳',
     detailAddress: '中海首开拾光里6栋',
     source: '经销商自助入驻申请',
-    level: '优质客户',
     category: '工装客户',
     auditStatus: 'pending',
     customNotes: '申请身份：经销商 | 门店/公司：北京极智物联科技有限公司 | 城市：北京-朝阳',
@@ -651,18 +608,13 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     projectName: '西山壹号院全案设计',
     phone: '13718889900',
     followUpStatus: '资料驳回待修改',
-    status: '意向客户',
-    deliveryStatus: '未交付',
-    priceGrade: '高端级别',
     salesperson: '王浩 (专属招商经理)',
     creator: '商户入驻申请',
     createdAt: '08-18 10:00',
     updatedAt: '08-19 11:30',
-    isPool: true,
     region: '北京-海淀',
     detailAddress: '西山壹号院',
     source: '室内设计师自助入驻申请',
-    level: '普通客户',
     category: '家装客户',
     auditStatus: 'rejected',
     auditFeedback: '营业执照信息不清晰，请重新提交',
@@ -675,28 +627,16 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     projectName: '万科翡翠公园大平层',
     phone: '13912345678',
     followUpStatus: '08-17 14:30',
-    status: '意向客户',
-    deliveryStatus: '未交付',
-    priceGrade: '高端级别',
     salesperson: '卫科帆',
     creator: '卫科帆',
     createdAt: '08-17 10:15',
     updatedAt: '08-18 14:20',
-    isPool: false,
     region: '上海-上海-浦东',
     detailAddress: '翡翠公园7号楼1801',
     source: '渠道介绍',
-    level: '重要客户',
     category: '家装客户',
     auditStatus: 'approved',
-    designer: '王设计师',
-    firstContactDate: '2026-08-17',
-    houseArea: '185',
-    houseLayout: '四室两厅',
-    channel: '红星美凯龙',
-    requirement: 'KNX总线调光、全屋环境温控与背景音乐系统',
     remark: '客户对科技感要求高，已看初步方案',
-    wechat: 'zhang_vanke',
   },
   {
     id: 'cust_4',
@@ -705,27 +645,15 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     projectName: '紫金府复式智能全案',
     phone: '15888889999',
     followUpStatus: '待签约',
-    status: '意向客户',
-    deliveryStatus: '未交付',
-    priceGrade: '尊享级别',
     salesperson: '李明',
     creator: '卫科帆',
     createdAt: '08-15 09:30',
     updatedAt: '08-18 11:00',
-    isPool: true,
     region: '浙江-杭州-滨江',
     detailAddress: '紫金府2期5栋302',
     source: '广告投放',
-    level: '优质客户',
     category: '别墅项目',
-    designer: '陈总监',
-    firstContactDate: '2026-08-15',
-    houseArea: '260',
-    houseLayout: '跃层复式',
-    channel: '圣都家装',
-    requirement: '全宅总线调光+智能安防+家庭影院联动',
     remark: '方案已确认，本周末到店签合同',
-    wechat: 'liminghua_hz',
   },
   {
     id: 'cust_5',
@@ -734,27 +662,15 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     projectName: '融创壹号院样板间',
     phone: '13700001111',
     followUpStatus: '丢单',
-    status: '丢单客户',
-    deliveryStatus: '未交付',
-    priceGrade: '普通级别',
     salesperson: '卫科帆',
     creator: '卫科帆',
     createdAt: '08-10 14:00',
     updatedAt: '08-16 17:30',
-    isPool: true,
     region: '广东-深圳-南山',
     detailAddress: '壹号院3栋2202',
     source: '上门用户',
-    level: '普通客户',
     category: '工装客户',
-    designer: '李工',
-    firstContactDate: '2026-08-10',
-    houseArea: '95',
-    houseLayout: '两室一厅',
-    channel: '暂无',
-    requirement: '基础开关面板改造',
     remark: '客户因精装已封板完工暂不加装',
-    wechat: 'liu_rc',
   },
 ];
 
@@ -1418,7 +1334,6 @@ export class AdminStorageManager {
         const parsed: Customer[] = JSON.parse(data);
         return parsed.map((c, idx) => ({
           ...c,
-          isPool: false, // 客户池功能已去掉，全部归属为我的客户
           balance: typeof c.balance === 'number' ? c.balance : (idx === 0 ? 15000 : idx === 1 ? 26800 : idx === 2 ? 0 : 38000),
           cooperationDeposit:
             typeof c.cooperationDeposit === 'number'
@@ -1467,7 +1382,6 @@ export class AdminStorageManager {
       const fallbackBalance = idx === 0 ? 15000 : idx === 1 ? 26800 : idx === 2 ? 0 : 38000;
       return {
         ...c,
-        isPool: false,
         balance: typeof c.balance === 'number' ? c.balance : fallbackBalance,
         cooperationDeposit:
           typeof c.cooperationDeposit === 'number'
@@ -1618,6 +1532,61 @@ export class AdminStorageManager {
       },
       ...this.getCouponIssueRecords(),
     ]);
+  }
+
+  static markCouponUsed(
+    customerId: string,
+    couponId: string,
+    planId: string,
+  ): boolean {
+    const customers = this.getCustomers();
+    const targetCustomer = customers.find((customer) => customer.id === customerId);
+    if (!targetCustomer) return false;
+
+    const targetCoupon = (targetCustomer.coupons || []).find(
+      (coupon) => coupon.id === couponId && coupon.status === 'usable',
+    );
+    if (!targetCoupon) return false;
+
+    const usedAt = new Date().toLocaleString('zh-CN', { hour12: false });
+    const updatedCustomers = customers.map((customer) =>
+      customer.id === customerId
+        ? {
+            ...customer,
+            coupons: (customer.coupons || []).map((coupon) =>
+              coupon.id === couponId
+                ? { ...coupon, status: 'used' as const, usedAt, usedPlanId: planId }
+                : coupon,
+            ),
+          }
+        : customer,
+    );
+    this.saveCustomers(updatedCustomers);
+
+    try {
+      const profile = this.getUserProfile();
+      if (profile.id === targetCustomer.id || profile.phone === targetCustomer.phone) {
+        this.saveUserProfile({
+          ...profile,
+          coupons: (profile.coupons || []).map((coupon) =>
+            coupon.id === couponId
+              ? { ...coupon, status: 'used' as const, usedAt, usedPlanId: planId }
+              : coupon,
+          ),
+        });
+      }
+    } catch {
+      // Ignore profile sync failure in the local prototype.
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('coupons_updated', {
+          detail: updatedCustomers.find((customer) => customer.id === customerId)?.coupons || [],
+        }),
+      );
+    }
+    return true;
   }
 
   // ---------------------------------------------------------------------------
@@ -2010,24 +1979,6 @@ export class AdminStorageManager {
                 ? parsed.balance
                 : 26800,
           accountEnabled: parsed.accountEnabled !== false,
-          contractStartDate: parsed.contractStartDate || '2026-01-01',
-          contractEndDate: parsed.contractEndDate || '2026-12-31',
-          renewalReminderDays: parsed.renewalReminderDays ?? 30,
-          operationBrands: parsed.operationBrands || INITIAL_USER_PROFILE.operationBrands,
-          annualSales: parsed.annualSales || INITIAL_USER_PROFILE.annualSales,
-          storeArea: parsed.storeArea || INITIAL_USER_PROFILE.storeArea,
-          companyStaff: parsed.companyStaff || INITIAL_USER_PROFILE.companyStaff,
-          businessScopes:
-            Array.isArray(parsed.businessScopes) && parsed.businessScopes.length > 0
-              ? parsed.businessScopes
-              : INITIAL_USER_PROFILE.businessScopes,
-          annualShipment:
-            parsed.annualShipment || INITIAL_USER_PROFILE.annualShipment,
-          giftDescription:
-            parsed.giftDescription || INITIAL_USER_PROFILE.giftDescription,
-          contractAttachments: Array.isArray(parsed.contractAttachments)
-            ? parsed.contractAttachments
-            : [],
           coupons: Array.isArray(parsed.coupons) ? parsed.coupons : INITIAL_COUPONS,
           defaultContacts: Array.isArray(parsed.defaultContacts) ? parsed.defaultContacts : this.getDefaultContacts(),
         };

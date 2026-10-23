@@ -268,7 +268,6 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       phone: contactPhoneInput.trim(),
       address: contactAddressInput.trim(),
       isDefault: contactIsDefaultInput,
-      createdAt: editingContact?.createdAt || new Date().toISOString().slice(0, 10),
     };
 
     if (editingContact) {

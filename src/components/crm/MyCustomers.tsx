@@ -19,7 +19,7 @@ import {
   ShieldCheck,
   Building2,
 } from 'lucide-react';
-import { Customer, PriceGrade, SavedPlanRecord } from '../../types';
+import { Customer, SavedPlanRecord } from '../../types';
 import { NewCustomerModal } from './NewCustomerModal';
 import { ChangeBalanceModal } from './ChangeBalanceModal';
 import { CustomerSubmittedPlansModal } from './CustomerSubmittedPlansModal';
@@ -31,7 +31,6 @@ interface MyCustomersProps {
   onAddCustomer: (customer: Customer) => void;
   onUpdateCustomer: (customer: Customer) => void;
   onBatchDelete: (selectedIds: string[]) => void;
-  onToggleShare: (customerId: string) => void;
   onShowToast?: (msg: string) => void;
   onRefreshData?: () => void;
 }
@@ -42,7 +41,6 @@ export const MyCustomers: React.FC<MyCustomersProps> = ({
   onAddCustomer,
   onUpdateCustomer,
   onBatchDelete,
-  onToggleShare,
   onShowToast,
   onRefreshData,
 }) => {

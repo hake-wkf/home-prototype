@@ -168,9 +168,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
           cooperationDeposit: updatedCust.cooperationDeposit,
           purchaseBalance: updatedCust.purchaseBalance,
           balance: updatedCust.purchaseBalance ?? updatedCust.balance,
-          contractStartDate: updatedCust.contractStartDate,
-          contractEndDate: updatedCust.contractEndDate,
-          renewalReminderDays: updatedCust.renewalReminderDays,
         });
       }
     } catch {
@@ -211,18 +208,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
     setCustomers(updated);
     AdminStorageManager.saveCustomers(updated);
     showToast(`已成功删除 ${selectedIds.length} 位客户`);
-  };
-
-  const handleToggleShare = (customerId: string) => {
-    const updated = customers.map((c) => {
-      if (c.id === customerId) {
-        return { ...c, isShared: !c.isShared };
-      }
-      return c;
-    });
-    setCustomers(updated);
-    AdminStorageManager.saveCustomers(updated);
-    showToast('客户共享状态已切换');
   };
 
   // Plan Records Handlers
@@ -960,7 +945,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSwitchToApp }) => {
               onAddCustomer={handleAddCustomer}
               onUpdateCustomer={handleUpdateCustomer}
               onBatchDelete={handleBatchDelete}
-              onToggleShare={handleToggleShare}
               onShowToast={showToast}
               onRefreshData={() => {
                 setCustomers(AdminStorageManager.getCustomers());

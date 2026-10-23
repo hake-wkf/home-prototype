@@ -266,12 +266,8 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
   });
 
   const availableOrderCustomers = AdminStorageManager.getCustomers();
-  const availableOrderCoupons = currentUser.coupons || [];
   const selectedOrderCustomer = availableOrderCustomers.find(
     (customer) => customer.id === orderCustomerId,
-  );
-  const selectedOrderCoupon = availableOrderCoupons.find(
-    (coupon) => coupon.id === selectedCouponId
   );
   const schemePriceYuan =
     contactSalesPlan?.schemePriceYuan ??
@@ -284,8 +280,18 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
   const orderSubtotalYuan = dealerPriceYuan;
   const couponEligibleYuan =
     Math.min(contactSalesPlan?.couponEligibleAmount ?? orderSubtotalYuan, orderSubtotalYuan);
+  const couponDate = new Date().toISOString().slice(0, 10);
+  const availableOrderCoupons = (selectedOrderCustomer?.coupons || []).filter(
+    (coupon) =>
+      coupon.status === 'usable' &&
+      coupon.validStartDate <= couponDate &&
+      coupon.validEndDate >= couponDate &&
+      coupon.minSpend <= couponEligibleYuan,
+  );
+  const selectedOrderCoupon = availableOrderCoupons.find(
+    (coupon) => coupon.id === selectedCouponId,
+  );
   const externalAmountYuan = contactSalesPlan?.externalAmount || 0;
-  const orderShippingFee = 0;
   const shippingThreshold =
     contactSalesPlan?.shippingThreshold ||
     (() => {
@@ -306,7 +312,7 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
     : 0;
   const orderAmountDue = Math.max(
     0,
-    Math.round(orderSubtotalYuan - couponPreviewAmount + orderShippingFee),
+    Math.round(orderSubtotalYuan - couponPreviewAmount),
   );
   const availablePurchaseBalance = selectedOrderCustomer
     ? selectedOrderCustomer.purchaseBalance ?? selectedOrderCustomer.balance ?? 0
@@ -470,6 +476,17 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       0,
       originalAmountYuan - couponDiscountAmount,
     );
+    if (
+      selectedCoupon &&
+      !AdminStorageManager.markCouponUsed(
+        selectedCustomer.id,
+        selectedCoupon.id,
+        contactSalesPlan.id,
+      )
+    ) {
+      showToast('优惠券状态已变化，请重新选择');
+      return;
+    }
     const balanceResult = AdminStorageManager.deductPurchaseBalance(
       selectedCustomer,
       Math.round(orderPaidAmount),
@@ -554,7 +571,6 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
       purchaseBalanceDeducted: balanceResult.deductedAmount,
       creditPaymentAmount,
       balanceDeductedAt: nowTime,
-      shippingFee: 0,
       shippingPolicyLabel: contactSalesPlan.shippingPolicyLabel,
       logisticsInfo: {
         orderNumber: generatedOrderNo,
@@ -1371,7 +1387,11 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                   </label>
                   <select
                     value={orderCustomerId}
-                    onChange={(event) => setOrderCustomerId(event.target.value)}
+                    onChange={(event) => {
+                      setOrderCustomerId(event.target.value);
+                      setUseCoupon(false);
+                      setSelectedCouponId('');
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-slate-900"
                   >
                     <option value="">请选择下单客户</option>
@@ -1409,15 +1429,22 @@ export const SavedPlansView: React.FC<SavedPlansViewProps> = ({
                     <input
                       type="checkbox"
                       checked={useCoupon}
+                      disabled={!selectedOrderCustomer || availableOrderCoupons.length === 0}
                       onChange={(event) => {
                         setUseCoupon(event.target.checked);
                         if (!event.target.checked) setSelectedCouponId('');
                       }}
-                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-700"
+                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
                     />
                   </label>
 
-                  {useCoupon && (
+                  {selectedOrderCustomer && availableOrderCoupons.length === 0 && (
+                    <p className="rounded-md bg-white px-2 py-1.5 text-[9px] text-slate-400">
+                      该客户当前没有满足门槛、有效期和状态条件的优惠券
+                    </p>
+                  )}
+
+                  {useCoupon && availableOrderCoupons.length > 0 && (
                     <select
                       value={selectedCouponId}
                       onChange={(event) => setSelectedCouponId(event.target.value)}
